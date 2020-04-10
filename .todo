@@ -1,0 +1,17 @@
+Performance Issues and Bugs:
+
+Map: 
+  ☐ trigger the mode automatically if no map file exists on project
+  ☐ design the UI or CI of map mode
+
+Map Functions:
+  ☐ wait (time)
+  ☐ click
+
+Runner:
+  ☐ load puppeteer and open the config.url
+
+  ☐ follow the map
+
+  ☐ screenshot
+  ☐ screenshot comparison
