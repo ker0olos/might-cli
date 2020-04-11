@@ -2,22 +2,28 @@
 
 import { terminal } from 'terminal-kit';
 
-import { join } from 'path';
-
 import { readFile, writeJSON } from 'fs-extra';
 
 import { spawn } from 'child_process';
+
+import { path } from './utils.js';
+
+import { runMap, mapMode } from './map.js';
+
+/**
+* @typedef { object } MightConfig
+* @property { string } startCommand
+* @property { string } url
+*/
 
 /** the start command process
 * @type { import('child_process').ChildProcessWithoutNullStreams }
 */
 let app;
 
-function path(s)
-{
-  return join(process.cwd(), `./${s}`);
-}
-
+/**
+* @returns { Promise<MightConfig> }
+*/
 async function readConfig()
 {
   let config;
@@ -31,10 +37,10 @@ async function readConfig()
   // read file error
   catch
   {
-    terminal('Might config file is missing of corrupted.\n');
-    terminal('Do you want to create a new config? [y/N]\n');
+    terminal('Might config file is missing or corrupted.\n');
+    terminal('Do you want to create a new config? [Y/n]\n');
 
-    const result = await terminal.yesOrNo({ yes: [ 'y' ], no: [ 'N' ] }).promise;
+    const result = await terminal.yesOrNo({ yes: [ 'Y' ], no: [ 'n' ] }).promise;
 
     if (!result)
       return;
@@ -73,21 +79,49 @@ function startApp(startCommand)
 
 async function main()
 {
-  // read the config file
-  const config = await readConfig();
+  // map mode only (no runner)
+  if (process.argv.indexOf('--map-mode') > -1)
+  {
+    await mapMode();
+  }
+  // start runner
+  else
+  {
+    // read the config file
+    const config = await readConfig();
+  
+    // TODO re-enable
+    // spawn the start command
+    // if (typeof config.startCommand !== 'string')
+    //   throw new Error('config.startCommand is not a string!');
+    // else
+    //   startApp(config.startCommand);
+  
+    await runMap(config);
+  }
+}
 
-  // TODO re-enable
-  // spawn the start command
-  // if (typeof config.startCommand !== 'string')
-  //   throw new Error('config.startCommand is not a string!');
-  // else
-  //   startApp(config.startCommand);
+function exitGracefully()
+{
+  // kill the start command
+  if (app && !app.killed)
+    app.kill();
+    
+  // exit main process gracefully
+  terminal.processExit(0);
+}
 
-  // TODO start map.js
-  // await new Promise((resolve) =>
-  // {
-  //   setTimeout(resolve, 1200000);
-  // });
+function exitForcefully(e)
+{
+// kill the start command
+  if (app && !app.killed)
+    app.kill();
+
+  // print the error that cased the exit code
+  terminal.red(`\n${e.message || e}`);
+
+  // exit main process with an error
+  terminal.processExit(1);
 }
 
 // allow the process to be interrupted
@@ -95,36 +129,15 @@ terminal.on('key', (name) =>
 {
   if (name === 'CTRL_C')
   {
-    // kill the start command
-    if (app && !app.killed)
-      app.kill();
-
     // print a notice about the manual termination
-    //then exit the main process gracefully
-    terminal.yellow('\nProcess was terminated.').processExit(0);
+    terminal.yellow('\nProcess was interrupted.');
+    
+    // exit the main process gracefully
+    exitGracefully();
   }
 });
 
 // start the main process
 main()
-  .then(() =>
-  {
-    // kill the start command
-    if (app && !app.killed)
-      app.kill();
-    
-    // exit main process gracefully
-    terminal.processExit(0);
-  })
-  .catch((e) =>
-  {
-    // kill the start command
-    if (app && !app.killed)
-      app.kill();
-    
-    // print the error that cased the exit code
-    terminal.red(`\n${e.message || e}`);
-
-    // exit main process with an error
-    terminal.processExit(1);
-  });
+  .then(exitGracefully)
+  .catch((e) => exitForcefully(e));
