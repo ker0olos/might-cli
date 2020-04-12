@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "description": "A simple way to perform end-to-end tests",
   "main": "index.js",
-  "private": true,
   "scripts": {
     "prepare": "npm run build",
     "build": "rm -rf ./build && mkdir ./build && babel -d ./build ./src",

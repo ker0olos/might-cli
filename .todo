@@ -2,14 +2,16 @@ Performance Issues and Bugs:
 
 Map: 
   ☐ allow controlling the viewport (landscape/portrait) (touch controls)
+  
+  ☐ modify default timeouts
 
 Actions:
 
 Runner:
   ☐ following the map
 
-  ✔ load puppeteer and open the config.url @done(20-04-11 06:59)
+  ☐ run individual tests
 
-  ✔ screenshot-ing @done(20-04-11 06:59)
+  ☐ store screenshot in a folder to be compared in later runs
   
   ☐ screenshots comparison

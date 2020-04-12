@@ -2,7 +2,7 @@ import { terminal } from 'terminal-kit';
 
 import { readFile, writeJSON } from 'fs-extra';
 
-import { path } from './utils.js';
+import { path, serializeStep, stepsToString } from './utils.js';
 
 import { runner } from './runner.js';
 
@@ -91,21 +91,6 @@ export async function mapMode()
     map = [];
   }
 
-  /**
-  * @param { MightStep } step
-  */
-  const serializeStep = (step) =>
-  {
-    if (step.action === 'wait')
-      return `Wait ${step.value}s`;
-    else if (step.action === 'select')
-      return `Select ${step.value}`;
-    else if (step.action === 'click')
-      return 'Click';
-    else if (step.action === 'type')
-      return `Type ${step.value}`;
-  };
-
   /** Pick an action and its value
   */
   async function action()
@@ -156,12 +141,12 @@ export async function mapMode()
 
     terminal(`Editing: ${test.title || 'Untitled Test'}\n`);
 
+    const exists = map.includes(test);
+
     let menu = [ 'New Step', 'Confirm', 'Cancel' ];
 
-    if (map.includes(test))
-    {
-      menu = [ 'New Step', 'Delete Test', 'Confirm', 'Cancel' ];
-    }
+    if (exists)
+      menu = [ 'Delete Test', 'Cancel' ];
 
     const result = await terminal.singleColumnMenu([
       ...test.steps.map((s, i) => `${i + 1}. ${serializeStep(s)}`),
@@ -213,13 +198,8 @@ export async function mapMode()
 
     terminal('[Might] Manage Tests\n');
 
-    const replacementTitle = (steps) =>
-    {
-      return steps.map(serializeStep).join(' 🠮 ');
-    };
-
     const result = await terminal.singleColumnMenu([
-      ...map.map((t, i) => `${i + 1}. ${t.title || replacementTitle(t.steps)}`),
+      ...map.map((t, i) => `${i + 1}. ${t.title || stepsToString(t.steps)}`),
       'Back'
     ]).promise;
 
