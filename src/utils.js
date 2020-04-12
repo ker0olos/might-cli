@@ -27,3 +27,10 @@ export function stepsToString(steps)
 {
   return steps.map(serializeStep).join(' 🠮 ');
 }
+
+export function roundTime(start, end)
+{
+  const num = (end - start) / 1000;
+
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}

@@ -122,14 +122,11 @@ function exitGracefully()
   terminal.processExit(0);
 }
 
-function exitForcefully(e)
+export function exitForcefully()
 {
-// kill the start command
+  // kill the start command
   if (app && !app.killed)
     app.kill();
-
-  // print the error that cased the exit code
-  terminal.red(`\n${e.message || e}`);
 
   // exit main process with an error
   terminal.processExit(1);
@@ -151,4 +148,10 @@ terminal.on('key', (name) =>
 // start the main process
 main()
   .then(exitGracefully)
-  .catch((e) => exitForcefully(e));
+  .catch((e) =>
+  {
+    // print the error
+    terminal.red(`\n${e.message || e}`);
+
+    exitForcefully();
+  });
