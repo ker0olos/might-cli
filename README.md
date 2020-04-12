@@ -19,4 +19,4 @@ You need a config file and a tests file.
 npx might
 `
 
-The CLI will create them for you and walk you though the rest.
+The CLI will create them for you and walk you through the rest.
