@@ -13,10 +13,8 @@ npm install --save-dev might-cli
 
 ## Usage
 
-You need a config file and a tests file.
-
 `
 npx might
 `
 
-The CLI will create them for you and walk you through the rest.
+will walk you through all the stuff you need to setup.

@@ -185,7 +185,7 @@ export async function runner(map, config)
       else if (t.state === 'updated')
       {
         terminal.yellow(`UPDATED (${time}s) `);
-        terminal(`${title}\n\n`);
+        terminal(`${title}\n`);
       }
       else
       {
