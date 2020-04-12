@@ -79,8 +79,16 @@ function startApp(startCommand)
 
 async function main()
 {
-  // map mode only (no runner)
-  if (process.argv.indexOf('--map-mode') > -1)
+  if (process.argv.indexOf('--help') > -1)
+  {
+    terminal('[Might] Help Menu\n');
+
+    terminal('\n--map-mode      Allows you to manage existing tests or add new ones.');
+    terminal('\n--update        Updates all saved screenshots.');
+    terminal('\n');
+  }
+  // opens map mode (ignoring the runner)
+  else if (process.argv.indexOf('--map-mode') > -1)
   {
     await mapMode();
   }
@@ -97,7 +105,10 @@ async function main()
     // else
     //   startApp(config.startCommand);
   
-    await runMap(config);
+    await runMap({
+      ...config,
+      update: process.argv.indexOf('--update')
+    });
   }
 }
 
