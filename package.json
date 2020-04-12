@@ -1,6 +1,6 @@
 {
   "name": "might-cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A simple way to perform end-to-end tests",
   "main": "index.js",
   "scripts": {
@@ -23,6 +23,8 @@
   "dependencies": {
     "@babel/runtime": "^7.9.2",
     "fs-extra": "^9.0.0",
+    "pixelmatch": "^5.1.0",
+    "pngjs": "^4.0.0",
     "puppeteer": "^2.1.1",
     "terminal-kit": "^1.35.2"
   },

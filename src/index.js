@@ -12,6 +12,7 @@ import { runMap, mapMode } from './map.js';
 
 /**
 * @typedef { object } MightConfig
+* @property { boolean } update
 * @property { string } startCommand
 * @property { string } url
 */
@@ -88,7 +89,7 @@ async function main()
     terminal('\n');
   }
   // opens map mode (ignoring the runner)
-  else if (process.argv.indexOf('--map-mode') > -1)
+  else if (process.argv.includes('--map-mode'))
   {
     await mapMode();
   }
@@ -107,7 +108,7 @@ async function main()
   
     await runMap({
       ...config,
-      update: process.argv.indexOf('--update')
+      update: process.argv.includes('--update')
     });
   }
 }

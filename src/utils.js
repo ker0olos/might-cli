@@ -23,9 +23,16 @@ export function serializeStep(step)
 /**
 * @param { MightStep[] } steps
 */
-export function stepsToString(steps)
+export function stepsToString(steps, separator)
 {
-  return steps.map(serializeStep).join(' 🠮 ');
+  separator = separator || ' 🠮 ';
+
+  return steps.map(serializeStep).join(separator);
+}
+
+export function wait(seconds)
+{
+  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
 export function roundTime(start, end)

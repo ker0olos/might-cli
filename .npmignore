@@ -4,6 +4,8 @@
 .todo
 .eslint*
 
+__might__
+
 might.*
 
 babel.config.js

@@ -2,16 +2,9 @@ Performance Issues and Bugs:
 
 Map: 
   ☐ allow controlling the viewport (landscape/portrait) (touch controls)
-  
   ☐ modify default timeouts
 
 Actions:
 
 Runner:
-  ☐ following the map
-
   ☐ run individual tests
-
-  ☐ store screenshot in a folder to be compared in later runs
-  
-  ☐ screenshots comparison
