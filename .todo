@@ -1,15 +1,9 @@
 Performance Issues and Bugs:
 
 Map: 
-  ✔ trigger the mode automatically if no map file exists on project @done(20-04-11 08:15)
-  
-  ✔ design the CLI of map mode @done(20-04-11 08:14)
-  
   ☐ allow controlling the viewport (landscape/portrait) (touch controls)
 
 Actions:
-  ☐ wait for time
-  ☐ click and click selectors
 
 Runner:
   ☐ following the map

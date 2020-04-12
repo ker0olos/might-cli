@@ -8,7 +8,13 @@ import { terminal } from 'terminal-kit';
 */
 export async function runner(map, config)
 {
-  terminal.red('Runner is not yet implemented.');
+  terminal.yellow(JSON.stringify(map));
+  
+  terminal.red('\nRunner is not yet implemented.');
+
+  // TODO print if map array is empty
+
+  // await page.click('div[title="Lista de Tarefas"]');
 
   // const browser = await puppeteer.launch({
   //   defaultViewport: { width: 1366, height: 768 },
