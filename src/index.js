@@ -91,7 +91,7 @@ async function main()
     terminal('Options:\n');
 
     terminal('\n--map-editor      Allows you to manage existing tests or add new ones.');
-    terminal('\n--update        Updates all saved screenshots.');
+    terminal('\n--update          Updates all saved screenshots.');
   }
   // opens map editor (ignoring the runner)
   else if (process.argv.includes('--map-editor'))
