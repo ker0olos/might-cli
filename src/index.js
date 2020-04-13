@@ -100,7 +100,7 @@ async function main()
     // read the config file
     const config = await readConfig();
   
-    // // spawn the start command
+    // spawn the start command
     if (typeof config.startCommand === 'string' && config.startCommand)
       startApp(config.startCommand);
   
@@ -116,6 +116,9 @@ function exitGracefully()
   // kill the start command
   if (app && !app.killed)
     app.kill();
+
+  // add new line
+  terminal('\n');
     
   // exit main process gracefully
   terminal.processExit(0);
@@ -127,8 +130,11 @@ export function exitForcefully()
   if (app && !app.killed)
     app.kill();
 
-  // exit main process with an error
-  terminal.processExit(1);
+  // add 2 new lines
+  terminal('\n\n');
+
+  // force exit the process
+  process.exit(1);
 }
 
 // allow the process to be interrupted

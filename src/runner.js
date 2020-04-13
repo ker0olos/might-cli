@@ -25,10 +25,6 @@ export async function runner(map, config)
   {
     const tasks = map.map((t) => t.title || stepsToString(t.steps));
 
-    terminal.clear();
-
-    terminal('[Might] Running Tests:');
-
     // map has no tests
     if (tasks.length <= 0)
     {
@@ -40,7 +36,7 @@ export async function runner(map, config)
     // show a progress ba in the terminal
     const progressBar = terminal.progressBar({
       width: 80,
-      title: '\n\n',
+      title: 'Running Tests:',
       percent: true,
       items: tasks.length
     });
@@ -160,16 +156,20 @@ export async function runner(map, config)
       }
     }
 
-    // clear terminal
+    // clear progress bar
     progressBar.stop();
-    terminal.clear();
+    terminal.eraseLine();
 
     // close puppeteer
     await browser.close();
 
     // print info about all tests
 
-    terminal('[Might] Tests Results:\n\n');
+    const total = map.length;
+
+    let passed = 0;
+    let updated = 0;
+    let failed = 0;
 
     for (const t of map)
     {
@@ -179,24 +179,30 @@ export async function runner(map, config)
 
       if (t.state === 'passed')
       {
-        terminal.green(`PASSED (${time}s) `);
+        terminal.bold.green(`PASSED (${time}s) `);
         terminal(`${title}\n`);
+
+        passed = passed + 1;
       }
       else if (t.state === 'updated')
       {
-        terminal.yellow(`UPDATED (${time}s) `);
+        terminal.bold.yellow(`UPDATED (${time}s) `);
         terminal(`${title}\n`);
+
+        updated = updated + 1;
       }
       else
       {
-        terminal.red(`FAILED (${time}s) `);
-        terminal(`${title}\n\n`);
+        terminal.bold.red(`FAILED (${time}s) `);
+        terminal(`${title}\n`);
+
+        failed = failed + 1;
 
         // print the error
-        terminal(t.error);
+        terminal.bold.red(`\n${t.error}`);
 
         if (t.errorPath)
-          terminal(`\n\n${t.errorPath}`);
+          terminal(` (${t.errorPath})`);
 
         // force exit the process with an exit code 1
         exitForcefully();
@@ -204,6 +210,19 @@ export async function runner(map, config)
         break;
       }
     }
+
+    terminal.bold('\nTests: ');
+
+    if (passed)
+      terminal.bold.green(`${passed} passed`)(', ');
+
+    if (updated)
+      terminal.bold.yellow(`${updated} updated`)(', ');
+
+    if (failed)
+      terminal.bold.red(`${failed} failed`)(', ');
+
+    terminal(`${total} total`);
 
     resolve();
   });
