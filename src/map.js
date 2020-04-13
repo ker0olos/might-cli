@@ -65,8 +65,7 @@ export async function runMap(config)
   finally
   {
     // run the map
-    if (map)
-      await runner(map, config);
+    await runner(map, config);
   }
 }
 

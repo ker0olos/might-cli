@@ -97,6 +97,9 @@ async function main()
   {
     // read the config file
     const config = await readConfig();
+
+    if (!config)
+      throw new Error('Error: Unable to load config file');
   
     // spawn the start command
     if (typeof config.startCommand === 'string' && config.startCommand)
