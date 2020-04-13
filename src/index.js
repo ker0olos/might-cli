@@ -90,8 +90,8 @@ async function main()
   {
     terminal('Options:\n');
 
-    terminal('\n--map-editor      Allows you to manage existing tests or add new ones.');
     terminal('\n--update          Updates all saved screenshots.');
+    terminal('\n--map-editor      Allows you to manage existing tests or add new ones.');
   }
   // opens map editor (ignoring the runner)
   else if (process.argv.includes('--map-editor'))
@@ -124,6 +124,9 @@ function exitGracefully()
   if (app && !app.killed)
     app.kill();
 
+  // make sure cursor is not hidden
+  terminal.hideCursor(false);
+
   // add new line
   terminal('\n');
     
@@ -136,6 +139,9 @@ export function exitForcefully()
   // kill the start command
   if (app && !app.killed)
     app.kill();
+
+  // make sure cursor is not hidden
+  terminal.hideCursor(false);
 
   // add 2 new lines
   terminal('\n\n');
