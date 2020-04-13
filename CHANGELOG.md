@@ -11,8 +11,8 @@
 
 ## [0.0.4] - 2020-04-13
 ### Changed 
-- Map mode now does not destroy your terminal.
-- Runner terminal output are now also pretty.
+- Map mode will no longer destroy your terminal.
+- Runner terminal output is now pretty.
 - Auto-generated json config files are now also pretty.
 
 ## [0.0.3] - 2020-04-12
