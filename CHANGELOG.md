@@ -1,6 +1,7 @@
 ## [Unreleased]
 ### Added
 - Shorter commands (-m === --map-editor).
+- Target what tests should run and what will be skipped (--target "test 1, test 2").
 
 ### Changed
 - Improved first-run setup experience.

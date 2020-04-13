@@ -35,7 +35,6 @@ async function readConfig()
 
     config = JSON.parse(config);
   }
-  // read file error
   catch
   {
     terminal.bold.yellow('[WARN: Config is missing or corrupted]\n');
@@ -86,6 +85,7 @@ function startApp(startCommand)
 
 async function main()
 {
+  // open help menu
   if (process.argv.includes('--help') || process.argv.includes('-h'))
   {
     terminal('Options:\n');
@@ -93,6 +93,7 @@ async function main()
     terminal('\n--help (-h)           Opens this help menu.');
     terminal('\n--update (-u)         Updates all target screenshots.');
     terminal('\n--map-editor (-m)     Manage existing tests or add new ones.');
+    terminal('\n--target (-t)         List the tests that should run (use their titles and separate them with a comma)');
   }
   // opens map editor (ignoring the runner)
   else if (process.argv.includes('--map-editor') || process.argv.includes('-m'))
@@ -102,6 +103,8 @@ async function main()
   // start runner
   else
   {
+    let target;
+
     // read the config file
     const config = await readConfig();
 
@@ -112,8 +115,23 @@ async function main()
     if (typeof config.startCommand === 'string' && config.startCommand)
       startApp(config.startCommand);
   
+    if (process.argv.includes('--target'))
+      target = process.argv.indexOf('--target');
+    else if (process.argv.includes('-t'))
+      target = process.argv.indexOf('-t');
+
+    if (target > -1)
+    {
+      target = process.argv[target + 1];
+  
+      // split by commas but allow commas to be escaped
+      if (target)
+        target = target.match(/(?:\\,|[^,])+/g).map((t) => t.trim());
+    }
+
     await runMap({
       ...config,
+      target: target,
       update: process.argv.includes('--update') || process.argv.includes('-u')
     });
   }

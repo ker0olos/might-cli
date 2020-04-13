@@ -23,13 +23,35 @@ export async function runner(map, config)
   if (!map)
     throw new Error('Error: Unable to load map file');
 
+  const skipped = [];
+
+  // if target is defined override map
+  if (Array.isArray(config.target))
+  {
+    map = map.filter((t) =>
+    {
+      // leave the test in map
+      // if its a target
+      if (config.target.includes(t.title))
+        return true;
+      // remove test from map
+      // push it to a different array
+      // to allow us to output skipped tests to terminal
+      else
+        skipped.push(t);
+    });
+  }
+
   const tasks = map.map((t) => t.title || stepsToString(t.steps));
 
   // map has no tests
   if (tasks.length <= 0)
   {
-    terminal.yellow('\n\nMap has no tests.');
-    
+    if (skipped.length > 0)
+      terminal.magenta('All tests were skipped.');
+    else
+      terminal.yellow('Map has no tests.');
+
     return;
   }
 
@@ -173,7 +195,7 @@ export async function runner(map, config)
 
   // print info about all tests
 
-  const total = map.length;
+  const total = map.length + skipped.length;
 
   let passed = 0;
   let updated = 0;
@@ -226,6 +248,9 @@ export async function runner(map, config)
 
   if (updated)
     terminal.bold.yellow(`${updated} updated`)(', ');
+
+  if (skipped.length)
+    terminal.bold.magenta(`${skipped.length} skipped`)(', ');
 
   if (failed)
     terminal.bold.red(`${failed} failed`)(', ');

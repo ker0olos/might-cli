@@ -48,7 +48,6 @@ export async function runMap(config)
   {
     map = await readMap();
   }
-  // read file error
   catch
   {
     terminal.bold.yellow('[WARN: Map is missing or corrupted]\n');
@@ -247,7 +246,7 @@ export async function mapEditor()
         data: map
       }, { spaces: '\t' });
 
-      terminal('\nSuccessfully saved the map.');
+      terminal('\nSuccessfully saved the map.\n\n');
     }
   }
 
