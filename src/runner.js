@@ -33,10 +33,15 @@ export async function runner(map, config)
       return resolve();
     }
 
+    // disable input
+    terminal.grabInput(true);
+
     // show a progress ba in the terminal
     const progressBar = terminal.progressBar({
       width: 80,
       title: 'Running Tests:',
+      inline: true,
+      syncMode: false,
       percent: true,
       items: tasks.length
     });

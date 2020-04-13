@@ -82,12 +82,10 @@ async function main()
 {
   if (process.argv.indexOf('--help') > -1)
   {
-    terminal('[Might] Help Menu');
+    terminal('Options:\n');
 
-    terminal('\n--map-mode      Allows you to manage existing tests or add new ones.\n');
-    terminal('\n--update        Updates all saved screenshots.\n');
-
-    terminal('\n');
+    terminal('\n--map-mode      Allows you to manage existing tests or add new ones.');
+    terminal('\n--update        Updates all saved screenshots.');
   }
   // opens map mode (ignoring the runner)
   else if (process.argv.includes('--map-mode'))
@@ -149,6 +147,9 @@ terminal.on('key', (name) =>
     exitGracefully();
   }
 });
+
+// add new line
+terminal('\n');
 
 // start the main process
 main()
