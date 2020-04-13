@@ -36,6 +36,9 @@ export async function runner(map, config)
   // disable input
   terminal.grabInput(true);
 
+  // hides cursor
+  terminal.hideCursor(true);
+
   // show a progress ba in the terminal
   const progressBar = terminal.progressBar({
     width: 80,
@@ -228,4 +231,7 @@ export async function runner(map, config)
     terminal.bold.red(`${failed} failed`)(', ');
 
   terminal(`${total} total`);
+
+  // show the cursor
+  terminal.hideCursor(false);
 }
