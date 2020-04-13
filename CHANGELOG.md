@@ -1,7 +1,9 @@
-<!-- ## [Unreleased] -->
+## [Unreleased]
 <!-- ### Added -->
 
-<!-- ### Changed -->
+### Changed
+- Improved first-run setup experience.
+- Renamed "Map Mode" to "Map Editor".
 
 <!-- ### Fixed -->
 
@@ -19,5 +21,5 @@
 
 ## [0.0.2] - 2020-04-12
 ### Added
-- Added a CLI help menu (npx might --help)
-- Added the runner: now you actually can run your tests.
+- A CLI help menu (npx might --help)
+- The Runner: now you actually can run your tests.

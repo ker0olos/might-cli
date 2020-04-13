@@ -51,16 +51,18 @@ export async function runMap(config)
   // read file error
   catch
   {
-    terminal('Your map is missing or corrupted.\n');
-    terminal('Do you want to go to "Map Mode" and create a new map? [Y/n]\n');
+    terminal.bold.yellow('[WARN: Map is missing or corrupted]\n');
+    terminal('Do you want to create a new map? ').bold('[Y/n]\n');
 
     const result = await terminal.yesOrNo({ yes: [ 'Y' ], no: [ 'n' ] }).promise;
 
     if (!result)
       return;
 
-    // go to map mode to create a new map
-    map = await mapMode();
+    terminal('\n');
+
+    // go to map editor to create a new map
+    map = await mapEditor();
   }
   finally
   {
@@ -72,7 +74,7 @@ export async function runMap(config)
 /**
 * @returns { Promise<MightMap> }
 */
-export async function mapMode()
+export async function mapEditor()
 {
   /**
   * @type { MightMap }
@@ -94,8 +96,7 @@ export async function mapMode()
   */
   async function action()
   {
-    terminal.restoreCursor();
-    terminal.eraseDisplayBelow();
+    terminal.restoreCursor().eraseDisplayBelow();
 
     terminal('Pick an action: \n');
 
@@ -132,8 +133,7 @@ export async function mapMode()
   */
   async function edit(test)
   {
-    terminal.restoreCursor();
-    terminal.eraseDisplayBelow();
+    terminal.restoreCursor().eraseDisplayBelow();
 
     test = test || {
       title: '',
@@ -195,8 +195,7 @@ export async function mapMode()
 
   async function manage()
   {
-    terminal.restoreCursor();
-    terminal.eraseDisplayBelow();
+    terminal.restoreCursor().eraseDisplayBelow();
 
     terminal('Manage Tests:\n');
 
@@ -215,14 +214,13 @@ export async function mapMode()
     }
   }
 
-  /** The homepage of Map Mode
+  /** The homepage of Map Editor
   */
   async function home()
   {
-    terminal.restoreCursor();
-    terminal.eraseDisplayBelow();
+    terminal.restoreCursor().eraseDisplayBelow();
 
-    terminal('Map Mode:\n');
+    terminal('Map Editor:\n');
 
     let menu = [ 'New Test', 'Manage Tests', 'Save', 'Cancel' ];
 

@@ -2,7 +2,7 @@
 
 ## Intro
 
-This project is still a work-in-progress, it's unstable, incomplete and updates will probably break all of your tests.
+This project is still in-development, it might be unstable.
 
 Our goal is to make a no-code method to add end-to-end tests to any web app.
 

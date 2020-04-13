@@ -8,7 +8,7 @@ import { spawn } from 'child_process';
 
 import { path } from './utils.js';
 
-import { runMap, mapMode } from './map.js';
+import { runMap, mapEditor } from './map.js';
 
 /**
 * @typedef { object } MightConfig
@@ -38,21 +38,27 @@ async function readConfig()
   // read file error
   catch
   {
-    terminal('Might config file is missing or corrupted.\n');
-    terminal('Do you want to create a new config? [Y/n]\n');
+    terminal.bold.yellow('[WARN: Config is missing or corrupted]\n');
+    terminal('Do you want to create a new config? ').bold('[Y/n]\n');
 
     const result = await terminal.yesOrNo({ yes: [ 'Y' ], no: [ 'n' ] }).promise;
 
     if (!result)
       return;
 
-    terminal('Enter the command that starts a http server of your app: ');
+    terminal('\n[e.i., npm run start] [Leave empty if none is needed]\n');
+    terminal.bold('Enter a command that starts a http server for your app: ');
     
     const startCommand = await terminal.inputField().promise;
 
-    terminal('\nEnter the URL of your app: ');
+    terminal('\n');
 
+    terminal('\n[e.i., http://localhost:8080] [required]\n');
+    terminal.bold('Enter the URL of your app: ');
+    
     const url = await terminal.inputField().promise;
+
+    terminal('\n\n');
 
     config = {
       startCommand,
@@ -84,13 +90,13 @@ async function main()
   {
     terminal('Options:\n');
 
-    terminal('\n--map-mode      Allows you to manage existing tests or add new ones.');
+    terminal('\n--map-editor      Allows you to manage existing tests or add new ones.');
     terminal('\n--update        Updates all saved screenshots.');
   }
-  // opens map mode (ignoring the runner)
-  else if (process.argv.includes('--map-mode'))
+  // opens map editor (ignoring the runner)
+  else if (process.argv.includes('--map-editor'))
   {
-    await mapMode();
+    await mapEditor();
   }
   // start runner
   else
