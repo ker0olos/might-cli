@@ -244,7 +244,7 @@ export async function mapMode()
       // write the object to disk
       await writeJSON(path('might.map.json'), {
         data: map
-      });
+      }, { spaces: '\t' });
 
       terminal('\nSuccessfully saved the map.');
     }

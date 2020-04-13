@@ -1,6 +1,6 @@
 {
   "name": "might-cli",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A simple way to perform end-to-end tests",
   "main": "index.js",
   "scripts": {

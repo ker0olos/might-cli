@@ -7,4 +7,6 @@ Map:
 Actions:
 
 Runner:
+  ☐ output unused screenshots to the terminal and add a option to clean them
+  
   ☐ run individual tests

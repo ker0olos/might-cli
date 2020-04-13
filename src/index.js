@@ -59,7 +59,7 @@ async function readConfig()
       url
     };
 
-    await writeJSON(path('might.config.json'), config);
+    await writeJSON(path('might.config.json'), config, { spaces: '\t' });
   }
   finally
   {
@@ -82,10 +82,11 @@ async function main()
 {
   if (process.argv.indexOf('--help') > -1)
   {
-    terminal('[Might] Help Menu\n');
+    terminal('[Might] Help Menu');
 
-    terminal('\n--map-mode      Allows you to manage existing tests or add new ones.');
-    terminal('\n--update        Updates all saved screenshots.');
+    terminal('\n--map-mode      Allows you to manage existing tests or add new ones.\n');
+    terminal('\n--update        Updates all saved screenshots.\n');
+
     terminal('\n');
   }
   // opens map mode (ignoring the runner)
@@ -99,12 +100,9 @@ async function main()
     // read the config file
     const config = await readConfig();
   
-    // TODO re-enable
-    // spawn the start command
-    // if (typeof config.startCommand !== 'string')
-    //   throw new Error('config.startCommand is not a string!');
-    // else
-    //   startApp(config.startCommand);
+    // // spawn the start command
+    if (typeof config.startCommand === 'string' && config.startCommand)
+      startApp(config.startCommand);
   
     await runMap({
       ...config,
