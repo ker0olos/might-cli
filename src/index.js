@@ -86,15 +86,16 @@ function startApp(startCommand)
 
 async function main()
 {
-  if (process.argv.indexOf('--help') > -1)
+  if (process.argv.includes('--help') || process.argv.includes('-h'))
   {
     terminal('Options:\n');
 
-    terminal('\n--update          Updates all saved screenshots.');
-    terminal('\n--map-editor      Allows you to manage existing tests or add new ones.');
+    terminal('\n--help (-h)           Opens this help menu.');
+    terminal('\n--update (-u)         Updates all target screenshots.');
+    terminal('\n--map-editor (-m)     Manage existing tests or add new ones.');
   }
   // opens map editor (ignoring the runner)
-  else if (process.argv.includes('--map-editor'))
+  else if (process.argv.includes('--map-editor') || process.argv.includes('-m'))
   {
     await mapEditor();
   }
@@ -113,7 +114,7 @@ async function main()
   
     await runMap({
       ...config,
-      update: process.argv.includes('--update')
+      update: process.argv.includes('--update') || process.argv.includes('-u')
     });
   }
 }

@@ -1,5 +1,6 @@
 ## [Unreleased]
-<!-- ### Added -->
+### Added
+- Shorter commands (-m === --map-editor).
 
 ### Changed
 - Improved first-run setup experience.
