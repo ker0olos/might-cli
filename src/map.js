@@ -94,7 +94,8 @@ export async function mapMode()
   */
   async function action()
   {
-    terminal.clear();
+    terminal.restoreCursor();
+    terminal.eraseDisplayBelow();
 
     terminal('Pick an action: \n');
 
@@ -131,7 +132,8 @@ export async function mapMode()
   */
   async function edit(test)
   {
-    terminal.clear();
+    terminal.restoreCursor();
+    terminal.eraseDisplayBelow();
 
     test = test || {
       title: '',
@@ -193,9 +195,10 @@ export async function mapMode()
 
   async function manage()
   {
-    terminal.clear();
+    terminal.restoreCursor();
+    terminal.eraseDisplayBelow();
 
-    terminal('[Might] Manage Tests\n');
+    terminal('Manage Tests:\n');
 
     const result = await terminal.singleColumnMenu([
       ...map.map((t, i) => `${i + 1}. ${t.title || stepsToString(t.steps)}`),
@@ -216,9 +219,10 @@ export async function mapMode()
   */
   async function home()
   {
-    terminal.clear();
+    terminal.restoreCursor();
+    terminal.eraseDisplayBelow();
 
-    terminal('[Might] Map Mode\n');
+    terminal('Map Mode:\n');
 
     let menu = [ 'New Test', 'Manage Tests', 'Save', 'Cancel' ];
 
@@ -248,6 +252,9 @@ export async function mapMode()
       terminal('\nSuccessfully saved the map.');
     }
   }
+
+  // save cursors location
+  terminal.saveCursor();
 
   // begin the interface loop
   await home();
