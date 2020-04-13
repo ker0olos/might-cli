@@ -18,6 +18,7 @@
 - Auto-generated json config files are now also pretty.
 
 ## [0.0.3] - 2020-04-12
+- was only released to re-phrase some sentences on the package's readme.
 
 ## [0.0.2] - 2020-04-12
 ### Added
