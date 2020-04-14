@@ -1,8 +1,11 @@
 .git
 .vscode
+.github
 .npmrc
 .todo
 .eslint*
+
+screenshots
 
 __might__
 

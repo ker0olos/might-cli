@@ -1,4 +1,19 @@
-## [Unreleased]
+<!-- ## [Unreleased] -->
+<!-- ### Added -->
+
+<!-- ### Changed -->
+
+<!-- ### Fixed -->
+
+<!-- ### Deprecated -->
+
+<!-- ### Removed -->
+
+## [0.1.1] - 2020-04-14
+### Removed
+- the unused files from the npm package.
+
+## [0.1.0] - 2020-04-14
 ### Added
 - Shorter commands (-m === --map-editor).
 - Target what tests should run and what will be skipped (--target "test 1, test 2").
@@ -6,12 +21,6 @@
 ### Changed
 - Improved first-run setup experience.
 - Renamed "Map Mode" to "Map Editor".
-
-<!-- ### Fixed -->
-
-<!-- ### Deprecated -->
-
-<!-- ### Removed -->
 
 ## [0.0.4] - 2020-04-13
 ### Changed 
