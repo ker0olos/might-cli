@@ -14,7 +14,7 @@ Eventually, we'll add a drop-and-drag GUI to set-up and manage all of your tests
 
 ## Installation
 `
-npm install --save-dev might-cli
+npm install --save-dev might-cli`
 
 ## Usage
 
