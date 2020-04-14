@@ -1,7 +1,7 @@
 {
   "name": "might-cli",
-  "version": "0.0.4",
-  "description": "A simple way to perform end-to-end tests",
+  "version": "0.1.0",
+  "description": "A no-code method to perform end-to-end tests",
   "main": "index.js",
   "scripts": {
     "prepare": "npm run build",
@@ -10,7 +10,9 @@
     "watch": "rm -rf ./build && mkdir ./build && babel -d ./build src -s --watch",
     "start": "node ./build/index.js"
   },
-  "bin": "build/index.js",
+  "bin": {
+    "might": "build/index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ItsKerolos/Might.git"
@@ -21,6 +23,15 @@
     "url": "https://github.com/ItsKerolos/Might/issues"
   },
   "homepage": "https://github.com/ItsKerolos/Might#readme",
+  "keywords": [
+    "test",
+    "testing",
+    "ui",
+    "ui-testing",
+    "end-to-end-test",
+    "end-to-end-test-automation",
+    "end-to-end-testing"
+  ],
   "dependencies": {
     "@babel/runtime": "^7.9.2",
     "fs-extra": "^9.0.0",
