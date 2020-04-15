@@ -1,4 +1,7 @@
 Performance Issues and Bugs:
+  ☐ re-factor runner and map into APIs
+    ☐ move all CLI to its own separate script and power it using said APIs
+    ☐ separate the CLI package and the core package
 
 Documentation:
 

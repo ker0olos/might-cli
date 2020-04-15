@@ -10,7 +10,7 @@ End-to-end testing can be complicated and can be overwhelming; especially if you
 
 A no-code (almost zero-config) method to perform end-to-end tests, handling most of the mess in the background.
 
-Eventually, we'll add a drop-and-drag GUI to set-up and manage all of your tests from but for the time being, we only have the command-line interface.
+Eventually, we'll add a drop-and-drag GUI to set-up and manage all of your tests from, but for the time being, we only have the command-line interface.
 
 ## Installation
 `

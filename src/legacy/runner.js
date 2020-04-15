@@ -1,62 +1,38 @@
 import puppeteer from 'puppeteer';
 
+import { terminal } from 'terminal-kit';
+
 import { PNG } from 'pngjs';
 
 import pixelmatch from 'pixelmatch';
 
-// TODO eliminate use of path() inside of the api
-
-import { stepsToString, path, wait } from './utils.js';
+import { stepsToString, roundTime, path, wait } from './utils.js';
 
 import { pathExists, ensureDir, readFile, writeFile } from 'fs-extra';
 
-// TODO add map type
+import { exitForcefully } from '.';
+
+const stepTimeout = 10000;
 
 /**
-*
-* @param { {
-  url: string,
-  map: any,
-  update: boolean,
-  target: string[],
-  stepTimeout: number
- } } options
-* @param { (type: 'progress' | 'error' | 'done', value: any) => void } callback
+* @param { import('./map.js').MightMap } map
+* @param { import('.').MightConfig } config
 */
-export async function runner(options, callback)
+export async function runner(map, config)
 {
-  options = options || {};
-
-  options.stepTimeout = options.stepTimeout || 15000;
-
-  let map = options.map;
-
   if (!map)
-  {
-    callback('error', {
-      message: 'Error: Unable to load map file'
-    });
+    throw new Error('Error: Unable to load map file');
 
-    return;
-  }
-  
   const skipped = [];
 
-  let passed = 0;
-  let updated = 0;
-  let failed = 0;
-
-  // TODO research allowing people to use might with jest
-  // maybe make runner use functions like screenshot, compare doStep() ?
-  
-  // filter tests using maps and target
-  if (Array.isArray(options.target))
+  // if target is defined override map
+  if (Array.isArray(config.target))
   {
     map = map.filter((t) =>
     {
       // leave the test in map
       // if its a target
-      if (options.target.includes(t.title))
+      if (config.target.includes(t.title))
         return true;
       // remove test from map
       // push it to a different array
@@ -68,28 +44,44 @@ export async function runner(options, callback)
 
   const tasks = map.map((t) => t.title || stepsToString(t.steps));
 
-  // if map has no tests or if all tests were skipped
+  // map has no tests
   if (tasks.length <= 0)
   {
-    callback('done', {
-      total: map.length + skipped.length,
-      skipped: skipped.length
-    });
+    if (skipped.length > 0)
+      terminal.magenta('All tests were skipped.');
+    else
+      terminal.yellow('Map has no tests.');
 
     return;
   }
+
+  // disable input
+  terminal.grabInput(true);
+
+  // hides cursor
+  terminal.hideCursor(true);
+
+  // show a progress ba in the terminal
+  const progressBar = terminal.progressBar({
+    width: 80,
+    title: 'Running Tests:',
+    inline: true,
+    syncMode: false,
+    percent: true,
+    items: tasks.length
+  });
 
   // ensure the screenshots directory exists
   await ensureDir(path('__might__'));
 
   // launch puppeteer
   const browser = await puppeteer.launch({
-    timeout: options.stepTimeout,
+    timeout: stepTimeout,
     defaultViewport: { width: 1366, height: 768 },
     args: [ '--no-sandbox', '--disable-setuid-sandbox' ]
   });
 
-  // run tests in sequence
+  // run all test in sequence
   for (const t of map)
   {
     const title = t.title || stepsToString(t.steps);
@@ -98,13 +90,10 @@ export async function runner(options, callback)
 
     try
     {
-      callback('progress', {
-        title,
-        state: 'running'
-      });
-  
+      progressBar.startItem(title);
+
       t.startTimeStamp = Date.now();
-      
+    
       const page = await browser.newPage();
 
       // an attempt to make tests more consistent
@@ -115,12 +104,12 @@ export async function runner(options, callback)
       });
 
       // go to the web app's url
-      await page.goto(options.url, {
+      await page.goto(config.url, {
       // septate timeout - since some web app will take some time
       // to compile, start then load
         timeout: 60000
       });
-  
+
       // follow test steps
       for (const s of t.steps)
       {
@@ -141,81 +130,133 @@ export async function runner(options, callback)
           await page.type(selector, s.value);
         }
       }
-  
+
       // all steps were executed
-  
+
       const screenshotLocation = path(`__might__/${stepsToString(t.steps, '_').split(' ').join('_').toLowerCase()}.png`);
-  
+
       const screenshotExists = await pathExists(screenshotLocation);
-  
+
       // update the stored screenshot
-      if (!screenshotExists || options.update)
+      if (!screenshotExists || config.update)
       {
         await page.screenshot({
           path: screenshotLocation
         });
-  
-        callback('progress', {
-          title,
-          state: 'updated',
-          time: Date.now() - t.startTimeStamp
-        });
 
-        updated = updated + 1;
+        t.state = 'updated';
       }
       else
       {
         const img1 = PNG.sync.read(await page.screenshot({}));
         const img2 = PNG.sync.read(await readFile(screenshotLocation));
-  
+
         const diff = new PNG({ width: img1.width, height: img1.height });
-  
+
         const mismatch = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height);
-  
+
         if (mismatch > 0)
         {
           const diffLocation = path(`might.error.${new Date().toISOString()}.png`);
-  
+
           await writeFile(diffLocation, PNG.sync.write(diff));
-  
+
           t.errorPath = diffLocation;
-  
+
           throw new Error(`Mismatched ${mismatch} pixels`);
         }
-  
-        callback('progress', {
-          title,
-          state: 'passed',
-          time: Date.now() - t.startTimeStamp
-        });
 
-        passed = passed + 1;
+        t.state = 'passed';
       }
+
+      t.endTimeStamp = Date.now();
+
+      progressBar.itemDone(title);
     }
     catch (e)
     {
       // test failed
-      callback('error', {
-        title,
-        error: e,
-        time: Date.now() - t.startTimeStamp
-      });
-
-      failed = failed + 1;
-
-      // if one test failed then don't run the rest
+      t.error = e;
+      t.state = 'failed';
+      t.endTimeStamp = Date.now();
+      
+      // one test failed
+      // don't run the rest
       break;
     }
   }
 
+  // clear progress bar
+  progressBar.stop();
+  terminal.eraseLine();
+
   // close puppeteer
   await browser.close();
 
-  callback('done', {
-    total: map.length + skipped.length,
-    passed,
-    updated,
-    skipped: skipped.length,
-    failed
-  });
+  // print info about all tests
+
+  const total = map.length + skipped.length;
+
+  let passed = 0;
+  let updated = 0;
+  let failed = 0;
+
+  for (const t of map)
+  {
+    const title = t.title || stepsToString(t.steps);
+
+    const time = roundTime(t.startTimeStamp, t.endTimeStamp);
+
+    if (t.state === 'passed')
+    {
+      terminal.bold.green(`PASSED (${time}s) `);
+      terminal(`${title}\n`);
+
+      passed = passed + 1;
+    }
+    else if (t.state === 'updated')
+    {
+      terminal.bold.yellow(`UPDATED (${time}s) `);
+      terminal(`${title}\n`);
+
+      updated = updated + 1;
+    }
+    else
+    {
+      terminal.bold.red(`FAILED (${time}s) `);
+      terminal(`${title}\n`);
+
+      failed = failed + 1;
+
+      // print the error
+      terminal.bold.red(`\n${t.error}`);
+
+      if (t.errorPath)
+        terminal(` (${t.errorPath})`);
+
+      // force exit the process with an exit code 1
+      exitForcefully();
+
+      break;
+    }
+  }
+
+  terminal.bold('\nTests: ');
+
+  if (passed)
+    terminal.bold.green(`${passed} passed`)(', ');
+
+  if (updated)
+    terminal.bold.yellow(`${updated} updated`)(', ');
+
+  if (skipped.length)
+    terminal.bold.magenta(`${skipped.length} skipped`)(', ');
+
+  if (failed)
+    terminal.bold.red(`${failed} failed`)(', ');
+
+  terminal(`${total} total`);
+
+  // show the cursor
+  terminal.hideCursor(false);
 }

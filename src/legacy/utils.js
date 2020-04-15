@@ -6,7 +6,7 @@ export function path(s)
 }
 
 /**
-* @param { import('../map').MightStep } step
+* @param { import('./map').MightStep } step
 */
 export function serializeStep(step)
 {
@@ -21,7 +21,7 @@ export function serializeStep(step)
 }
 
 /**
-* @param { import('../map').MightStep[] } steps
+* @param { import('./map').MightStep[] } steps
 */
 export function stepsToString(steps, separator)
 {

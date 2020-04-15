@@ -5,6 +5,7 @@ import { readFile, writeJSON } from 'fs-extra';
 import { path, serializeStep, stepsToString } from './utils.js';
 
 import { runner } from './runner.js';
+import { whileRunner } from './src2/cli.js';
 
 /**
 * @typedef { MightTest[] } MightMap
@@ -66,7 +67,7 @@ export async function runMap(config)
   finally
   {
     // run the map
-    await runner(map, config);
+    await whileRunner(map, config);
   }
 }
 
