@@ -1,15 +1,17 @@
+#! /usr/bin/env node
+
 import { terminal } from 'terminal-kit';
 
-import { readJSON, writeJSON } from 'fs-extra';
+import { join } from 'path';
+
+import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
 
 import { spawn } from 'child_process';
-
-import { path } from './utils.js';
 
 import { runner } from './runner.js';
 
 /**
-* @typedef { object } MightConfig
+* @typedef { object } Config
 * @property { string } startCommand
 * @property { string } url
 */
@@ -19,8 +21,20 @@ import { runner } from './runner.js';
 */
 let app;
 
-/**
-* @returns { Promise<MightConfig> }
+function path(...args)
+{
+  return join(process.cwd(), ...args);
+}
+
+function roundTime(end, start)
+{
+  const num = (end - start) / 1000;
+
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
+/** read the config file from disk
+* @returns { Promise<Config> }
 */
 async function readConfig()
 {
@@ -67,7 +81,9 @@ async function readConfig()
   }
 }
 
-// TODO add map type
+/** read the map file from disk
+* @returns { Promise<import('./runner.js').Map> }
+*/
 async function readMap()
 {
   let map;
@@ -82,15 +98,12 @@ async function readMap()
     terminal('Do you want to create a new map? ').bold('[Y/n]\n');
 
     const result = await terminal.yesOrNo({ yes: [ 'Y' ], no: [ 'n' ] }).promise;
-
+    
     if (!result)
       return;
-
-    terminal('\n');
-
-    // TODO
+    
     // go to map editor to create a new map
-    // map = await mapEditor();
+    map = await edit();
   }
   finally
   {
@@ -98,6 +111,8 @@ async function readMap()
   }
 }
 
+/** the main process "loop"
+*/
 async function main()
 {
   // open help menu
@@ -113,9 +128,8 @@ async function main()
   // opens map editor (ignoring the runner)
   else if (process.argv.includes('--map-editor') || process.argv.includes('-m'))
   {
-    // TODO create a map management to a api
     // then rewrite map editor to use said api
-    // await mapEditor();
+    await edit();
   }
   // start runner
   else
@@ -155,7 +169,7 @@ async function main()
   }
 }
 
-/**
+/** spawn the start command
 * @param { string } command
 */
 function start(command)
@@ -166,31 +180,145 @@ function start(command)
     { cwd: process.cwd() });
 }
 
-// TODO add map type
-
-/**
-* @param { [] } map
+/** run the tests and output their progress and outcome
+* to the terminal
+* @param { import('./runner.js').Map } map
 * @param { [] } target
-* @param { MightConfig } config
+* @param { Config } config
 */
 async function run(map, target, update, config)
 {
+  // hide cursor
+  terminal.hideCursor(true);
+
+  let interval;
+
+  let startTimestamp;
+
+  let index = 1, length = 0;
+
   await runner({
     url: config.url,
     map,
     update,
-    target
+    target,
+    dir: path('__might__')
   }, (type, value) =>
   {
-    console.log(type, value);
+    // the amount of tasks that are going to run
+    if (type === 'started')
+      length = value;
 
-    // TODO re-write the interface for the runner to be feel faster
+    // an error occurred during a test
+    if (type === 'error')
+    {
+      // if there's a property called diff then the error is a mismatch
+      if (value.diff)
+      {
+        //  write the difference error to disk
+        const diffLocation = path(`might.error.${new Date().toISOString()}.png`);
+          
+        writeFileSync(diffLocation, value.diff);
 
-    // if (type === 'done')
-    // {
+        terminal(`\n${diffLocation}\n`);
+      }
+
+      if (interval)
+        clearInterval(interval);
+
+      throw new Error(value.message || value);
+    }
+    
+    // all tests are done
+    if (type === 'done')
+    {
+      // no tests at all
+      if (value.total === 0 && value.skipped === 0)
+      {
+        terminal.bold.yellow('Map has no tests.');
+      }
+      // all tests were skipped
+      else if (value.total === value.skipped)
+      {
+        terminal.bold.magenta('All tests were skipped.');
+      }
+      // print a summary of all the tests
+      else
+      {
+        terminal.bold('\nSummary: ');
+
+        if (value.passed)
+          terminal.bold.green(`${value.passed} passed`)(', ');
       
-    // }
+        if (value.updated)
+          terminal.bold.yellow(`${value.updated} updated`)(', ');
+      
+        if (value.skipped)
+          terminal.bold.magenta(`${value.skipped} skipped`)(', ');
+      
+        terminal(`${value.total} total`);
+      }
+    }
+
+    // one of the tests made progress
+    if (type === 'progress')
+    {
+      const time = roundTime(Date.now(), startTimestamp);
+
+      if (value.state === 'running')
+      {
+        terminal.saveCursor();
+
+        startTimestamp = Date.now();
+
+        terminal.bold.brightBlue(`RUNNING (0.0s) (${index}/${length})`)(` ${value.title}\n`);
+
+        interval = setInterval(() =>
+        {
+          terminal.restoreCursor();
+          terminal.deleteLine();
+
+          const time = roundTime(Date.now(), startTimestamp);
+
+          terminal.bold.brightBlue(`RUNNING (${time}s) (${index}/${length})`)(` ${value.title}\n`);
+        }, 100);
+      }
+      else
+      {
+        index = index + 1;
+
+        if (interval)
+          clearInterval(interval);
+
+        terminal.restoreCursor();
+        terminal.eraseDisplayBelow();
+      }
+      
+      if (value.state === 'updated')
+      {
+        terminal.bold.yellow(`UPDATED (${time}s)`)(` ${value.title}\n`);
+      }
+      else if (value.state === 'failed')
+      {
+        terminal.bold.red(`FAILED (${time}s)`)(` ${value.title}\n`);
+      }
+      else if (value.state === 'passed')
+      {
+        terminal.bold.green(`PASSED (${time}s)`)(` ${value.title}\n`);
+      }
+    }
   });
+
+  // show cursor again
+  terminal.hideCursor(false);
+}
+
+/** open a map editor that allows for managing tests
+* @param { import('./runner.js').Map } map
+*/
+async function edit(map)
+{
+  // TODO map editor
 }
 
 function exitGracefully()
@@ -199,10 +327,10 @@ function exitGracefully()
   if (app && !app.killed)
     app.kill();
 
-  // make sure cursor is not hidden
+  // ensure the to enable input and cursor
+  terminal.grabInput(false);
   terminal.hideCursor(false);
-
-  // add new line
+  
   terminal('\n');
     
   // exit main process gracefully
@@ -215,7 +343,8 @@ function exitForcefully()
   if (app && !app.killed)
     app.kill();
 
-  // make sure cursor is not hidden
+  // ensure the to enable input and cursor
+  terminal.grabInput(false);
   terminal.hideCursor(false);
 
   // add 2 new lines
@@ -225,8 +354,10 @@ function exitForcefully()
   process.exit(1);
 }
 
+// grab the input
+terminal.grabInput({ mouse: 'button' }) ;
 
-// allow the process to be interrupted
+// listen for interruptions
 terminal.on('key', (name) =>
 {
   if (name === 'CTRL_C')

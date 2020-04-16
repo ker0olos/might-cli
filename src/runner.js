@@ -4,28 +4,61 @@ import { PNG } from 'pngjs';
 
 import pixelmatch from 'pixelmatch';
 
-// TODO eliminate use of path() inside of the api
+import { join } from 'path';
 
-import { stepsToString, path, wait } from './utils.js';
+import { pathExists, ensureDir, readFile } from 'fs-extra';
 
-import { pathExists, ensureDir, readFile, writeFile } from 'fs-extra';
+import { stepsToString, wait } from './utils.js';
 
-// TODO add map type
+/**
+* @typedef { Test[] } Map
+* @property { string } title
+* @property { Step[] } steps
+*/
+
+/**
+* @typedef { object } Test
+* @property { string } title
+* @property { Step[] } steps
+*/
+
+/**
+* @typedef { object } Step
+* @property { 'wait' | 'select' | 'click' | 'type' } action
+* @property { any } value
+*/
+
+class MismatchError extends Error
+{
+  /**
+  * @param { string } message
+  * @param { Buffer } diff
+  */
+  constructor(message, diff)
+  {
+    super(message);
+
+    this.diff = diff;
+  }
+}
 
 /**
 *
 * @param { {
   url: string,
-  map: any,
+  map: Map,
   update: boolean,
   target: string[],
+  dir: string,
   stepTimeout: number
  } } options
-* @param { (type: 'progress' | 'error' | 'done', value: any) => void } callback
+* @param { (type: 'started' | 'progress' | 'error' | 'done', value: any) => void } callback
 */
 export async function runner(options, callback)
 {
   options = options || {};
+
+  options.dir = options.dir || join(__dirname, '../__might__');
 
   options.stepTimeout = options.stepTimeout || 15000;
 
@@ -66,10 +99,8 @@ export async function runner(options, callback)
     });
   }
 
-  const tasks = map.map((t) => t.title || stepsToString(t.steps));
-
   // if map has no tests or if all tests were skipped
-  if (tasks.length <= 0)
+  if (map.length <= 0)
   {
     callback('done', {
       total: map.length + skipped.length,
@@ -80,7 +111,7 @@ export async function runner(options, callback)
   }
 
   // ensure the screenshots directory exists
-  await ensureDir(path('__might__'));
+  await ensureDir(options.dir);
 
   // launch puppeteer
   const browser = await puppeteer.launch({
@@ -88,6 +119,9 @@ export async function runner(options, callback)
     defaultViewport: { width: 1366, height: 768 },
     args: [ '--no-sandbox', '--disable-setuid-sandbox' ]
   });
+
+  // announce the amount of tests that are pending
+  callback('started', map.length);
 
   // run tests in sequence
   for (const t of map)
@@ -103,8 +137,6 @@ export async function runner(options, callback)
         state: 'running'
       });
   
-      t.startTimeStamp = Date.now();
-      
       const page = await browser.newPage();
 
       // an attempt to make tests more consistent
@@ -116,12 +148,12 @@ export async function runner(options, callback)
 
       // go to the web app's url
       await page.goto(options.url, {
-      // septate timeout - since some web app will take some time
-      // to compile, start then load
+        // septate timeout - since some web app will take some time
+        // to compile, start then load
         timeout: 60000
       });
   
-      // follow test steps
+      // follow the steps
       for (const s of t.steps)
       {
         if (s.action === 'wait')
@@ -144,21 +176,21 @@ export async function runner(options, callback)
   
       // all steps were executed
   
-      const screenshotLocation = path(`__might__/${stepsToString(t.steps, '_').split(' ').join('_').toLowerCase()}.png`);
+      const screenshotId = stepsToString(t.steps, '_').split(' ').join('_').toLowerCase();
+      const screenshotPath = join(options.dir, `${screenshotId}.png`);
   
-      const screenshotExists = await pathExists(screenshotLocation);
+      const screenshotExists = await pathExists(screenshotPath);
   
       // update the stored screenshot
       if (!screenshotExists || options.update)
       {
         await page.screenshot({
-          path: screenshotLocation
+          path: screenshotPath
         });
   
         callback('progress', {
           title,
-          state: 'updated',
-          time: Date.now() - t.startTimeStamp
+          state: 'updated'
         });
 
         updated = updated + 1;
@@ -166,27 +198,18 @@ export async function runner(options, callback)
       else
       {
         const img1 = PNG.sync.read(await page.screenshot({}));
-        const img2 = PNG.sync.read(await readFile(screenshotLocation));
+        const img2 = PNG.sync.read(await readFile(screenshotPath));
   
         const diff = new PNG({ width: img1.width, height: img1.height });
   
         const mismatch = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height);
   
         if (mismatch > 0)
-        {
-          const diffLocation = path(`might.error.${new Date().toISOString()}.png`);
-  
-          await writeFile(diffLocation, PNG.sync.write(diff));
-  
-          t.errorPath = diffLocation;
-  
-          throw new Error(`Mismatched ${mismatch} pixels`);
-        }
+          throw new MismatchError(`Error: Mismatched ${mismatch} pixels`, PNG.sync.write(diff));
   
         callback('progress', {
           title,
-          state: 'passed',
-          time: Date.now() - t.startTimeStamp
+          state: 'passed'
         });
 
         passed = passed + 1;
@@ -195,11 +218,13 @@ export async function runner(options, callback)
     catch (e)
     {
       // test failed
-      callback('error', {
+
+      callback('progress', {
         title,
-        error: e,
-        time: Date.now() - t.startTimeStamp
+        state: 'failed'
       });
+
+      callback('error', e);
 
       failed = failed + 1;
 

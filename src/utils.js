@@ -1,12 +1,5 @@
-import { join } from 'path';
-
-export function path(s)
-{
-  return join(process.cwd(), `./${s}`);
-}
-
 /**
-* @param { import('../map').MightStep } step
+* @param { import('./runner.js').Step } step
 */
 export function serializeStep(step)
 {
@@ -21,7 +14,7 @@ export function serializeStep(step)
 }
 
 /**
-* @param { import('../map').MightStep[] } steps
+* @param { import('./runner.js').Step[] } steps
 */
 export function stepsToString(steps, separator)
 {
@@ -33,11 +26,4 @@ export function stepsToString(steps, separator)
 export function wait(seconds)
 {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
-}
-
-export function roundTime(start, end)
-{
-  const num = (end - start) / 1000;
-
-  return Math.round((num + Number.EPSILON) * 100) / 100;
 }

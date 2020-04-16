@@ -5,11 +5,11 @@ Performance Issues and Bugs:
 
 Documentation:
 
+CLI:
+  ☐ add an option of modify default timeouts
+  ☐ output unused screenshots to the terminal and add a option to clean them
+
 Map: 
   ☐ allow controlling the viewport (landscape/portrait) (touch controls)
-  ☐ modify default timeouts
-
-Actions:
-
+  
 Runner:
-  ☐ output unused screenshots to the terminal and add a option to clean them
