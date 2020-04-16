@@ -9,6 +9,10 @@
 
 <!-- ### Removed -->
 
+## [0.1.2] - 2020-04-16
+### Changed
+- moved the core code to another package, this caused few small changes to some of the interface.
+
 ## [0.1.1] - 2020-04-14
 ### Removed
 - the unused files from the npm package.
