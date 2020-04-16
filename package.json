@@ -2,27 +2,27 @@
   "name": "might-cli",
   "version": "0.1.2",
   "description": "A no-code method to perform end-to-end tests",
-  "main": "build/index.js",
+  "main": "index.js",
   "scripts": {
     "prepare": "npm run build",
     "postpublish": "npm version patch --no-git",
     "build": "rm -rf ./build && mkdir ./build && babel -d ./build ./src",
     "watch": "rm -rf ./build && mkdir ./build && babel -d ./build src -s --watch",
-    "start": "node ./build/index.js"
+    "start": "node ./build/cli.js"
   },
   "bin": {
     "might": "build/cli.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ItsKerolos/Might.git"
+    "url": "git+https://github.com/ItsKerolos/might-cli.git"
   },
   "author": "Kerolos Zaki",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ItsKerolos/Might/issues"
+    "url": "https://github.com/ItsKerolos/might-cli/issues"
   },
-  "homepage": "https://github.com/ItsKerolos/Might#readme",
+  "homepage": "https://github.com/ItsKerolos/might-cli#readme",
   "keywords": [
     "test",
     "testing",
@@ -35,9 +35,7 @@
   "dependencies": {
     "@babel/runtime": "^7.9.2",
     "fs-extra": "^9.0.0",
-    "pixelmatch": "^5.1.0",
-    "pngjs": "^4.0.0",
-    "puppeteer": "^2.1.1",
+    "might-core": "^0.1.0",
     "terminal-kit": "^1.35.2"
   },
   "devDependencies": {

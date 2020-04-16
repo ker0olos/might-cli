@@ -1,4 +1,5 @@
-# Might
+![npm (tag)](https://img.shields.io/npm/v/might-cli/latest)
+![npm](https://img.shields.io/npm/dm/might-cli)
 
 **This project is still in-development, it might be unstable.**
 
@@ -6,17 +7,19 @@
 
 End-to-end testing can be complicated and can be overwhelming; especially if you want to start testing a huge app, that would take a lot of time and afford, and will probably cause you a few headaches.
 
-## Our Solution
+## The Solution
 
 A no-code (almost zero-config) method to perform end-to-end tests, handling most of the mess in the background.
 
-Eventually, we'll add a drop-and-drag GUI to set-up and manage all of your tests from, but for the time being, we only have the command-line interface.
+we're working on a drop-and-drag GUI to set-up and manage all of your tests from, but for the time being, we only have the command-line interface.
 
 ## Installation
 `
 npm install --save-dev might-cli`
 
 ## Usage
+
+*if you want to use might with code instead, check [might-core](https://github.com/ItsKerolos/might-core), it's the code that's powering this package.*
 
 `npx might`
 
@@ -50,4 +53,4 @@ The second time a test is performed, we again take a screenshot of its outcome b
 
 ## How does it work?
 
-Using Puppeteer, because of course it does, everything else is pretty basic, but if you're still curious, feel free to have a look at the source code.
+Puppeteer, because of course it is, but if you're still curious, feel free to have a look at [might-core](https://github.com/ItsKerolos/might-core)'s source.

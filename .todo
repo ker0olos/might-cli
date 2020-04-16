@@ -1,15 +1,7 @@
 Performance Issues and Bugs:
-  ☐ re-factor runner and map into APIs
-    ☐ move all CLI to its own separate script and power it using said APIs
-    ☐ separate the CLI package and the core package
 
 Documentation:
 
 CLI:
   ☐ add an option of modify default timeouts
   ☐ output unused screenshots to the terminal and add a option to clean them
-
-Map: 
-  ☐ allow controlling the viewport (landscape/portrait) (touch controls)
-  
-Runner:

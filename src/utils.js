@@ -22,8 +22,3 @@ export function stepsToString(steps, separator)
 
   return steps.map(serializeStep).join(separator);
 }
-
-export function wait(seconds)
-{
-  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
-}
