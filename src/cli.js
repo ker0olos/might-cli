@@ -10,9 +10,6 @@ import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
 
 import { spawn } from 'child_process';
 
-import { serializeStep, stepsToString } from './utils.js';
-
-
 /**
 * @typedef { object } Config
 * @property { string } startCommand
@@ -131,11 +128,11 @@ async function main()
  
     terminal('\n--help (-h)           Opens this help menu.');
     terminal('\n--update (-u)         Updates all target screenshots.');
-    
+
     // TODO
     // terminal('\n--map-editor (-m)     Manage existing tests or add new ones.');
 
-    terminal('\n--target (-t)         List the tests that should run (use their titles and separate them with a comma)');
+    terminal('\n--target (-t)         List the tests that should run (use their titles --- separate them with a comma)');
   }
   // TODO
   // opens map editor (ignoring the runner)

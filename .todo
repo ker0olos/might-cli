@@ -1,7 +1,10 @@
 Performance Issues and Bugs:
 
 Documentation:
+  ☐ add more info about might-ui
 
 CLI:
   ☐ add an option of modify default timeouts
+    - default timeouts are hardcoded in the runner.js
+  
   ☐ output unused screenshots to the terminal and add a option to clean them
