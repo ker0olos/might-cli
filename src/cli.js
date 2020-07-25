@@ -100,17 +100,19 @@ async function readMap(dialog)
   {
     if (!dialog)
       return;
-    
+
     terminal.bold.yellow('[WARN: Map is missing or corrupted]\n');
-    terminal('Do you want to create a new map? ').bold('[Y/n]\n');
+      
+    // TODO
+    // terminal('Do you want to create a new map? ').bold('[Y/n]\n');
 
-    const result = await terminal.yesOrNo({ yes: [ 'Y' ], no: [ 'n' ] }).promise;
+    // const result = await terminal.yesOrNo({ yes: [ 'Y' ], no: [ 'n' ] }).promise;
     
-    terminal('\n');
-
     // go to map editor to create a new map
-    if (result)
-      map = await editor(map);
+    // if (result)
+    // map = await editor(map);
+
+    terminal('\n');
   }
   finally
   {
@@ -129,18 +131,22 @@ async function main()
  
     terminal('\n--help (-h)           Opens this help menu.');
     terminal('\n--update (-u)         Updates all target screenshots.');
-    terminal('\n--map-editor (-m)     Manage existing tests or add new ones.');
+    
+    // TODO
+    // terminal('\n--map-editor (-m)     Manage existing tests or add new ones.');
+
     terminal('\n--target (-t)         List the tests that should run (use their titles and separate them with a comma)');
   }
+  // TODO
   // opens map editor (ignoring the runner)
-  else if (process.argv.includes('--map-editor') || process.argv.includes('-m'))
-  {
-    // read the map file
-    const map = await readMap(false);
+  // else if (process.argv.includes('--map-editor') || process.argv.includes('-m'))
+  // {
+  //   // read the map file
+  //   const map = await readMap(false);
 
-    // then rewrite map editor to use said api
-    await editor(map);
-  }
+  //   // then rewrite map editor to use said api
+  //   await editor(map);
+  // }
   // start runner
   else
   {
@@ -321,194 +327,6 @@ async function run(map, target, update, config)
 
   // show cursor again
   terminal.hideCursor(false);
-}
-
-/** open a map editor that allows for managing tests
-* @param { import('./runner.js').Map } map
-*/
-async function editor(map)
-{
-  /** Pick an action and its value
-  */
-  async function action()
-  {
-    terminal.restoreCursor().eraseDisplayBelow();
-
-    terminal('Pick an action:\n\n');
-
-    const actions = [ 'Wait', 'Select', 'Click', 'Type', 'Cancel' ];
-
-    const result = await terminal.singleRowMenu(actions, {
-      style: terminal,
-      selectedStyle: terminal.inverse
-    }).promise;
-
-    if (result.selectedIndex < actions.length - 1)
-    {
-      const key = result.selectedText.toLowerCase();
-
-      if (key === 'wait')
-        terminal('\nEnter time to wait in seconds: ');
-      else if (key === 'select')
-        terminal('\nEnter selector: ');
-      else if (key === 'type')
-        terminal('\nEnter input: ');
-
-      if (key === 'wait' || key === 'select' || key === 'type')
-      {
-        const value = await terminal.inputField({ minLength: 1 }).promise;
- 
-        return { action: key, value };
-      }
-      else
-      {
-        return { action: key };
-      }
-    }
-  }
-
-  /** Edit/Add A Test
-  * @param { MightTest } test
-  */
-  async function edit(test)
-  {
-    terminal.restoreCursor().eraseDisplayBelow();
-
-    test = test || {
-      title: '',
-      steps: []
-    };
-
-    terminal(`Editing: ${test.title || 'Untitled Test'}\n`);
-
-    const exists = map.includes(test);
-
-    let menu = [ 'New Step', 'Confirm', 'Cancel' ];
-
-    if (exists)
-      menu = [ 'Delete Test', 'Cancel' ];
-
-    const result = await terminal.singleColumnMenu([
-      ...test.steps.map((s, i) => `${i + 1}. ${serializeStep(s)}`),
-      ...menu
-    ], {
-      style: terminal,
-      selectedStyle: terminal.inverse
-    }).promise;
-
-    // add new step to test
-    if (result.selectedText === 'New Step')
-    {
-      const step = await action();
-
-      if (step)
-        test.steps.push(step);
-
-      await edit(test);
-    }
-    // remove test from map
-    else if (result.selectedText === 'Delete Test')
-    {
-      map.splice(map.indexOf(test), 1);
-
-      await home();
-    }
-    // add test to map
-    else if (result.selectedText === 'Confirm')
-    {
-      terminal('\nEnter test title (can be empty): ');
-      test.title = await terminal.inputField().promise;
-
-      map.push(test);
-     
-      await home();
-    }
-    // cancel
-    else if (result.selectedText === 'Cancel')
-    {
-      await home();
-    }
-    // stay at the same state
-    else
-    {
-      await edit(test);
-    }
-  }
-
-  async function manage()
-  {
-    terminal.restoreCursor().eraseDisplayBelow();
-
-    terminal('Manage Tests:\n');
-
-    const result = await terminal.singleColumnMenu([
-      ...map.map((t, i) => `${i + 1}. ${t.title || stepsToString(t.steps)}`),
-      'Back'
-    ], {
-      style: terminal,
-      selectedStyle: terminal.inverse
-    }).promise;
-
-    if (result.selectedText === 'Back')
-    {
-      await home();
-    }
-    else
-    {
-      await edit(map[result.selectedIndex]);
-    }
-  }
-
-  /** The homepage of Map Editor
-  */
-  async function home()
-  {
-    terminal.restoreCursor().eraseDisplayBelow();
-
-    terminal('Map Editor:\n');
-
-    let menu = [ 'New Test', 'Manage Tests', 'Save', 'Cancel' ];
-
-    if (map.length <= 0)
-      menu = [ 'New Test', 'Save', 'Cancel' ];
-
-    const result = await terminal.singleColumnMenu(menu, {
-      style: terminal,
-      selectedStyle: terminal.inverse
-    }).promise;
-
-    // add new test
-    if (result.selectedText === 'New Test')
-    {
-      await edit();
-    }
-    // manage existing tests
-    else if (result.selectedText === 'Manage Tests')
-    {
-      await manage();
-    }
-    // save map
-    else  if (result.selectedText === 'Save')
-    {
-      // write the object to disk
-      await writeJSON(path('might.map.json'), {
-        data: map
-      }, { spaces: '\t' });
-
-      terminal.bold('\nSuccessfully saved the map.\n');
-    }
-  }
-
-  // save cursors location
-  terminal.saveCursor();
-
-  // begin the interface loop
-  await home();
-
-  terminal('\n');
-
-  // return map to runner
-  return map;
 }
 
 function exitGracefully()

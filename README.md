@@ -1,13 +1,11 @@
 ![npm (tag)](https://img.shields.io/npm/v/might-cli/latest)
 ![npm](https://img.shields.io/npm/dm/might-cli)
 
-**This project is still in-development, it might be unstable.**
+## Problem
 
-## The Problem
+End-to-end testing can get very complicated and can be overwhelming; especially if you want to start testing a huge app, that would take a lot of time and afford, and will boring and repetitive.
 
-End-to-end testing can be complicated and can be overwhelming; especially if you want to start testing a huge app, that would take a lot of time and afford, and will probably cause you a few headaches.
-
-## The Solution
+## Solution
 
 A no-code (almost zero-config) method to perform end-to-end tests, handling most of the mess in the background.
 
@@ -19,37 +17,31 @@ npm install --save-dev might-cli`
 
 ## Usage
 
-*if you want to use might with code instead, check [might-core](https://github.com/ItsKerolos/might-core), it's the code that's powering this package.*
-
 `npx might`
+
+When you run the command for the first time, it will walk you through all the things you need to configure:
 
 [![](./screenshots/1.png)]()
 
-When you run the command for the first time, it will walk you through all the things you need to configure.
+You can set a command that starts the development server of your app, it's spawned before testing begins and terminated after the testing is done. (optional)
 
 [![](./screenshots/2.png)]()
 
-You can set a command that starts the development server of your app, it's spawned before testing begins and terminated after the testing is done. (optional)
+Then you have to provide the URL of your app. (required)
 
 [![](./screenshots/3.png)]()
 
-Then you have to provide the URL of your app. (required)
+Now you have to create a few tests to run, tests are described inside a ```might.map.json``` file in the root of your project directory, the easiest way to create tests is by using [might-ui](https://github.com/ItsKerolos/Might).
+
+Now lets say you did create a test --- The first time a test is performed, we screenshot its outcome (after all the steps) and save that screenshot inside a folder in your project directory.
 
 [![](./screenshots/4.png)]()
 
-When that's all done you can now start creating your tests.
+
+When the test is performed for the second time, we again take a screenshot of its outcome but then compare it to the first-run screenshot, if both match then the test is passed, but if they mismatch then the test fails and a diff-image is created at the root of your project to show you the difference between both screenshots.
 
 [![](./screenshots/5.png)]()
 
-Add a new test, set-up a few steps then save everything.
-
-[![](./screenshots/6.png)]()
-
-The first time a test is performed, we screenshot its outcome (after all the steps) and save that screenshot inside a folder in your project directory.
-
-[![](./screenshots/7.png)]()
-
-The second time a test is performed, we again take a screenshot of its outcome but then compare it to the first-run screenshot, if both match then the test is passed, but if they mismatch the test fails and a diff-image is created at the root of your project to show you the difference between both images.
 
 ## How does it work?
 
