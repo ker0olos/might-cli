@@ -14,6 +14,7 @@ import { spawn } from 'child_process';
 * @typedef { object } Config
 * @property { string } startCommand
 * @property { string } url
+* @property { { width: number, height: number } } viewport
 */
 
 /** the start command process
@@ -66,11 +67,22 @@ async function readConfig()
     
     const url = await terminal.inputField().promise;
 
+    terminal('\n[e.i., 1280x720] [optional]\n');
+    terminal.bold('Enter the default viewport of the app: ');
+    
+    const viewport = await terminal.inputField().promise;
+
+    const [ width, height ] = viewport.split('x');
+    
     terminal('\n\n');
 
     config = {
       startCommand,
-      url
+      url: url || 'http://localhost:8080',
+      viewport: {
+        width: parseInt(width),
+        height: parseInt(height)
+      }
     };
 
     await writeJSON(path('might.config.json'), config, { spaces: '\t' });
@@ -99,15 +111,7 @@ async function readMap(dialog)
       return;
 
     terminal.bold.yellow('[WARN: Map is missing or corrupted]\n');
-      
-    // TODO
-    // terminal('Do you want to create a new map? ').bold('[Y/n]\n');
-
-    // const result = await terminal.yesOrNo({ yes: [ 'Y' ], no: [ 'n' ] }).promise;
-    
-    // go to map editor to create a new map
-    // if (result)
-    // map = await editor(map);
+    terminal.bold('[INFO: Create "might.map.json" in the root of the project and add your tests to it]\n');
 
     terminal('\n');
   }
@@ -129,12 +133,12 @@ async function main()
     terminal('\n--help (-h)           Opens this help menu.');
     terminal('\n--update (-u)         Updates all target screenshots.');
 
-    // TODO
+    // TODO should spawn "might-ui" now instead
     // terminal('\n--map-editor (-m)     Manage existing tests or add new ones.');
 
     terminal('\n--target (-t)         List the tests that should run (use their titles --- separate them with a comma)');
   }
-  // TODO
+  // TODO should spawn "might-ui" now instead
   // opens map editor (ignoring the runner)
   // else if (process.argv.includes('--map-editor') || process.argv.includes('-m'))
   // {
@@ -212,6 +216,10 @@ async function run(map, target, update, config)
 
   await runner({
     url: config.url,
+    viewport: {
+      width: config.viewport.width,
+      height: config.viewport.height
+    },
     map,
     update,
     target,
