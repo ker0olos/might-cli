@@ -23,24 +23,28 @@ When you run the command for the first time, it will walk you through all the th
 
 [![](./screenshots/1.png)]()
 
-You can set a command that starts the development server of your app, it's spawned before testing begins and terminated after the testing is done. (optional)
+You can set a command that starts the development server of your app, it's spawned before testing begins and terminated after the testing is done, this is optional.
 
 [![](./screenshots/2.png)]()
 
-Then you have to provide the URL of your app. (required)
+Then you have to provide the URL of your app, this is required.
 
 [![](./screenshots/3.png)]()
+
+After that you can change the default viewport dimensions for your tests, this is optional and each test can have a different viewport.
+
+[![](./screenshots/4.png)]()
 
 Now you have to create a few tests to run, tests are described inside a ```might.map.json``` file in the root of your project directory, the easiest way to create tests is by using [might-ui](https://github.com/ItsKerolos/Might).
 
 Now lets say you did create a test --- The first time a test is performed, we screenshot its outcome (after all the steps) and save that screenshot inside a folder in your project directory.
 
-[![](./screenshots/4.png)]()
+[![](./screenshots/5.png)]()
 
 
 When the test is performed for the second time, we again take a screenshot of its outcome but then compare it to the first-run screenshot, if both match then the test is passed, but if they mismatch then the test fails and a diff-image is created at the root of your project to show you the difference between both screenshots.
 
-[![](./screenshots/5.png)]()
+[![](./screenshots/6.png)]()
 
 
 ## How does it work?

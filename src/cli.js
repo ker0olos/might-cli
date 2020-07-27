@@ -67,6 +67,8 @@ async function readConfig()
     
     const url = await terminal.inputField().promise;
 
+    terminal('\n');
+
     terminal('\n[e.i., 1280x720] [optional]\n');
     terminal.bold('Enter the default viewport of the app: ');
     
