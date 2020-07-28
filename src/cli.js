@@ -1,7 +1,5 @@
 #! /usr/bin/env node
 
-import { runner } from 'might-core';
-
 import { terminal } from 'terminal-kit';
 
 import { join } from 'path';
@@ -9,6 +7,8 @@ import { join } from 'path';
 import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
 
 import { spawn } from 'child_process';
+
+import { runner } from './runner.js';
 
 /**
 * @typedef { object } Config
