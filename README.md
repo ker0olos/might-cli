@@ -49,4 +49,4 @@ When the test is performed for the second time, we again take a screenshot of it
 
 ## How does it work?
 
-Puppeteer, because of course it is, but if you're still curious, feel free to have a look at [might-core](https://github.com/ItsKerolos/might-core)'s source.
+Puppeteer, because of course it is, but if you're still curious, feel free to have a look at [runner.js](https://github.com/ItsKerolos/might-cli/blob/master/src/runner.js).

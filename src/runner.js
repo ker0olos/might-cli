@@ -147,12 +147,19 @@ export async function runner(options, callback)
       {
         // wait a duration of time
         if (typeof step.value === 'number')
+        {
           await wait(step.value);
+        }
         // wait for a selector
         else
+        {
           await page.waitForSelector(step.value, {
             timeout: options.stepTimeout
           });
+
+          // so there's no need to select the same element again after waiting
+          selector = step.value;
+        }
       }
       else if  (step.action === 'viewport')
       {
