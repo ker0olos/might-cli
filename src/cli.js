@@ -6,7 +6,7 @@ import { join } from 'path';
 
 import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
 
-import { spawn } from 'child_process';
+import { exec } from 'child_process';
 
 import { runner } from './runner.js';
 
@@ -135,21 +135,22 @@ async function main()
     terminal('\n--help (-h)           Opens this help menu.');
     terminal('\n--update (-u)         Updates all target screenshots.');
 
-    // TODO should spawn "might-ui" now instead
-    // terminal('\n--map-editor (-m)     Manage existing tests or add new ones.');
+    terminal('\n--map (-m)            Opens Might UI.');
 
     terminal('\n--target (-t)         List the tests that should run (use their titles --- separate them with a comma)');
   }
-  // TODO should spawn "might-ui" now instead
-  // opens map editor (ignoring the runner)
-  // else if (process.argv.includes('--map-editor') || process.argv.includes('-m'))
-  // {
-  //   // read the map file
-  //   const map = await readMap(false);
+  // opens might-ui (even if not installed because npx is cool)
+  else if (process.argv.includes('--map') || process.argv.includes('-m'))
+  {
+    app = exec('npx might-ui', { cwd: process.cwd() });
 
-  //   // then rewrite map editor to use said api
-  //   await editor(map);
-  // }
+    app.stdout.on('data', (data) => terminal(data.toString()));
+
+    app.stderr.on('data', (data) => terminal.red(data.toString()));
+
+    // awaits for eternity
+    await new Promise(() => undefined);
+  }
   // start runner
   else
   {
@@ -193,10 +194,7 @@ async function main()
 */
 function start(command)
 {
-  app = spawn(
-    command.split(' ')[0],
-    command.split(' ').slice(1),
-    { cwd: process.cwd() });
+  app = exec(command, { cwd: process.cwd() });
 }
 
 /** run the tests and output their progress and outcome
