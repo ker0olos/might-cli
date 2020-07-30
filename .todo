@@ -1,13 +1,10 @@
 Performance Issues and Bugs:
 
 Documentation:
-  ☐ add more info about might-ui
 
 Map:
 
 Runner:
 
 CLI:
-  ☐ add a argument to start might-ui if its installed (might -m) 
-
   ☐ output unused screenshots to the terminal and add a option to clean them @low
