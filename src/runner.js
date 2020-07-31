@@ -224,7 +224,7 @@ export async function runner(options, callback)
         /**
         * @type { string[] }
         */
-        const split = step.value.split('+');
+        const split = step.value.replace('++', '+NumpadAdd').split('+');
 
         let shift = false, ctrl = false, alt = false;
 
