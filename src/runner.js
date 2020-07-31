@@ -47,6 +47,41 @@ function wait(seconds)
 }
 
 /**
+* @param { () => Promise<any> } fn
+* @param { number } delay
+* @param { number } maxTime
+ */
+function retry(fn, delay, maxTime)
+{
+  return new Promise((resolve, reject) =>
+  {
+    let timeout = false;
+
+    const timeoutRef = setTimeout(() => timeout = true, maxTime);
+
+    const r = (e) =>
+    {
+      if (timeoutRef)
+        clearTimeout(timeoutRef);
+      
+      resolve(e);
+    };
+
+    const call = () => fn().then(r);
+
+    const fail = (e) =>
+    {
+      if (timeout)
+        reject(e);
+      else
+        setTimeout(() => call().catch(fail), delay);
+    };
+
+    call().catch(fail);
+  });
+}
+
+/**
 *
 * @param { {
   url: string,
@@ -194,7 +229,7 @@ export async function runner(options, callback)
         title,
         state: 'running'
       });
-  
+
       const page = await browser.newPage();
 
       // an attempt to make tests more consistent
@@ -203,18 +238,17 @@ export async function runner(options, callback)
         'X-Forwarded-For': '8.8.8.8',
         'Accept-Language': 'en-US,en;q=0.5'
       });
-      
-      // go to the web app's url
-      await page.goto(options.url, {
-        // septate timeout - since some web app will take some time
-        // to compile, start then load
-        timeout: 60000
-      });
-  
+
+      // go to the web app's url (retry enabled)
+      await retry(
+        () => page.goto(options.url, { timeout: 10000 }),
+        1000,
+        60000
+      );
+
       // run the steps
       for (const step of t.steps)
       {
-
         await runStep(page, step);
       }
   

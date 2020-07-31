@@ -320,7 +320,7 @@ async function run(map, target, update, config)
         interval = setInterval(() =>
         {
           terminal.restoreCursor();
-          terminal.deleteLine();
+          terminal.eraseDisplayBelow();
 
           const time = roundTime(Date.now(), startTimestamp);
 
