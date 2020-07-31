@@ -203,6 +203,14 @@ function kill()
 {
   return new Promise((resolve, reject) =>
   {
+    // no running processes
+    if (!running)
+    {
+      resolve();
+
+      return;
+    }
+
     // search for any grandchildren
     psTree(running.pid, (err, children) =>
     {
