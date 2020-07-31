@@ -6,7 +6,9 @@ import { join } from 'path';
 
 import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
 
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
+
+import psTree from 'ps-tree';
 
 import { runner } from './runner.js';
 
@@ -20,7 +22,7 @@ import { runner } from './runner.js';
 /** the start command process
 * @type { import('child_process').ChildProcessWithoutNullStreams }
 */
-let app;
+let running;
 
 function path(...args)
 {
@@ -40,7 +42,7 @@ function roundTime(end, start)
 async function readConfig()
 {
   let config;
-  
+
   try
   {
     config = await readJSON(path('might.config.json'));
@@ -57,25 +59,25 @@ async function readConfig()
 
     terminal('\n[e.i., npm run start] [Leave empty if none is needed]\n');
     terminal.bold('Enter a command that starts a http server for your app: ');
-    
+
     const startCommand = await terminal.inputField().promise;
 
     terminal('\n');
 
     terminal('\n[e.i., http://localhost:8080] [required]\n');
     terminal.bold('Enter the URL of your app: ');
-    
+
     const url = await terminal.inputField().promise;
 
     terminal('\n');
 
     terminal('\n[e.i., 1280x720] [optional]\n');
     terminal.bold('Enter the default viewport of the app: ');
-    
+
     const viewport = await terminal.inputField().promise;
 
     const [ width, height ] = viewport.split('x');
-    
+
     terminal('\n\n');
 
     config = {
@@ -131,7 +133,7 @@ async function main()
   if (process.argv.includes('--help') || process.argv.includes('-h'))
   {
     terminal('Options:\n');
- 
+
     terminal('\n--help (-h)           Opens this help menu.');
     terminal('\n--update (-u)         Updates all target screenshots.');
 
@@ -142,11 +144,11 @@ async function main()
   // opens might-ui (even if not installed because npx is cool)
   else if (process.argv.includes('--map') || process.argv.includes('-m'))
   {
-    app = exec('npx might-ui', { cwd: process.cwd() });
+    running = spawn('npx might-ui', { shell: true, cwd: process.cwd() });
 
-    app.stdout.on('data', (data) => terminal(data.toString()));
+    running.stdout.on('data', (data) => terminal(data.toString()));
 
-    app.stderr.on('data', (data) => terminal.red(data.toString()));
+    running.stderr.on('data', (data) => terminal.red(data.toString()));
 
     // awaits for eternity
     await new Promise(() => undefined);
@@ -161,7 +163,7 @@ async function main()
 
     if (!config)
       throw new Error('Error: Unable to load config file');
-  
+
     // spawn the start command
     if (typeof config.startCommand === 'string' && config.startCommand)
       start(config.startCommand);
@@ -174,7 +176,7 @@ async function main()
     if (target > -1)
     {
       target = process.argv[target + 1];
-  
+
       // split by commas but allow commas to be escaped
       if (target)
         target = target.match(/(?:\\,|[^,])+/g).map((t) => t.trim());
@@ -194,7 +196,28 @@ async function main()
 */
 function start(command)
 {
-  app = exec(command, { cwd: process.cwd() });
+  running = spawn(command, { shell: true, cwd: process.cwd() });
+}
+
+function kill()
+{
+  return new Promise((resolve, reject) =>
+  {
+    // search for any grandchildren
+    psTree(running.pid, (err, children) =>
+    {
+      if (err)
+        reject(err);
+
+      // kill any grandchildren
+      children?.forEach(({ PID }) => process.kill(PID, 'SIGINT'));
+
+      // kill the original child
+      process.kill(running.pid, 'SIGINT');
+
+      resolve();
+    });
+  });
 }
 
 /** run the tests and output their progress and outcome
@@ -238,7 +261,7 @@ async function run(map, target, update, config)
       {
         //  write the difference error to disk
         const diffLocation = path(`might.error.${new Date().toISOString()}.png`);
-          
+
         writeFileSync(diffLocation, value.diff);
 
         terminal(`\n${diffLocation}\n`);
@@ -249,7 +272,7 @@ async function run(map, target, update, config)
 
       throw new Error(value.message || value);
     }
-    
+
     // all tests are done
     if (type === 'done')
     {
@@ -270,13 +293,13 @@ async function run(map, target, update, config)
 
         if (value.passed)
           terminal.bold.green(`${value.passed} passed`)(', ');
-      
+
         if (value.updated)
           terminal.bold.yellow(`${value.updated} updated`)(', ');
-      
+
         if (value.skipped)
           terminal.bold.magenta(`${value.skipped} skipped`)(', ');
-      
+
         terminal(`${value.total} total`);
       }
     }
@@ -314,7 +337,7 @@ async function run(map, target, update, config)
         terminal.restoreCursor();
         terminal.eraseDisplayBelow();
       }
-      
+
       if (value.state === 'updated')
       {
         terminal.bold.yellow(`UPDATED (${time}s)`)(` ${value.title}\n`);
@@ -336,26 +359,18 @@ async function run(map, target, update, config)
 
 function exitGracefully()
 {
-  // kill the start command
-  if (app && !app.killed)
-    app.kill();
-
   // ensure the to enable input and cursor
   terminal.grabInput(false);
   terminal.hideCursor(false);
-  
+
   terminal('\n');
-    
+
   // exit main process gracefully
   terminal.processExit(0);
 }
 
 function exitForcefully()
 {
-  // kill the start command
-  if (app && !app.killed)
-    app.kill();
-
   // ensure the to enable input and cursor
   terminal.grabInput(false);
   terminal.hideCursor(false);
@@ -377,9 +392,10 @@ terminal.on('key', (name) =>
   {
     // print a notice about the manual termination
     terminal.yellow('\nProcess was interrupted.');
-    
+
     // exit the main process gracefully
-    exitGracefully();
+    // after killing  all running children
+    kill().then(exitGracefully).catch(exitGracefully);
   }
 });
 
@@ -387,12 +403,25 @@ terminal.on('key', (name) =>
 terminal('\n');
 
 // start the main process
-main()
-  .then(exitGracefully)
-  .catch((e) =>
+(async() =>
+{
+  try
+  {
+    await main();
+
+    // kill all running children
+    await kill();
+
+    exitGracefully();
+  }
+  catch (e)
   {
     // print the error
     terminal.red(`\n${e.message || e}`);
 
+    // kill all running children
+    await kill();
+
     exitForcefully();
-  });
+  }
+})();
