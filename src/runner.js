@@ -2,6 +2,8 @@ import { PNG } from 'pngjs';
 
 import puppeteer from 'puppeteer';
 
+import { keyDefinitions } from 'puppeteer/lib/cjs/puppeteer/common/USKeyboardLayout.js';
+
 import pixelmatch from 'pixelmatch';
 
 import { join } from 'path';
@@ -217,9 +219,71 @@ export async function runner(options, callback)
       {
         await page.click(selector);
       }
+      else if (step.action === 'keyboard')
+      {
+        /**
+        * @type { string[] }
+        */
+        const split = step.value.split('+');
+
+        let shift = false, ctrl = false, alt = false;
+
+        // hold modifier keys
+
+        if (split.includes('Shift'))
+        {
+          shift = true;
+
+          await page.keyboard.down('Shift');
+        }
+
+        if (split.includes('Control'))
+        {
+          ctrl = true;
+          
+          await page.keyboard.down('Control');
+        }
+
+        if (split.includes('Alt'))
+        {
+          alt = true;
+          
+          await page.keyboard.down('Alt');
+        }
+
+        // press all other keys
+
+        for (let i = 0; i < split.length; i++)
+        {
+          // eslint-disable-next-line security/detect-object-injection
+          const key = split[i];
+
+          if (key !== 'Shift' && key !== 'Control' && key !== 'Alt')
+          {
+            // eslint-disable-next-line security/detect-object-injection
+            const code = keyDefinitions[key]?.code;
+
+            if (code)
+              await page.keyboard.press(code);
+            else
+              await page.keyboard.type(key);
+          }
+        }
+
+        // release modifier keys
+
+        if (shift)
+          await page.keyboard.up('Shift');
+
+        if (ctrl)
+          await page.keyboard.up('Control');
+
+        if (alt)
+          await page.keyboard.up('Alt');
+      }
       else if (step.action === 'type')
       {
-        await page.type(selector, step.value);
+        await page.keyboard.type(selector, step.value);
       }
     };
 
