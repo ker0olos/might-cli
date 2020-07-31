@@ -226,6 +226,9 @@ export async function runner(options, callback)
         */
         const split = step.value.replace('++', '+NumpadAdd').split('+');
 
+        // make sure the selected element is focused
+        await page.focus(selector);
+
         let shift = false, ctrl = false, alt = false;
 
         // hold modifier keys
@@ -283,7 +286,7 @@ export async function runner(options, callback)
       }
       else if (step.action === 'type')
       {
-        await page.keyboard.type(selector, step.value);
+        await page.type(selector, step.value);
       }
     };
 
