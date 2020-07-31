@@ -207,6 +207,15 @@ export async function runner(options, callback)
           height: parseInt(height)
         });
       }
+      else if  (step.action === 'media')
+      {
+        const [ name, value ] = step.value.split(':');
+
+        await page.emulateMediaFeatures([ {
+          name: name.trim(),
+          value: value.trim()
+        } ]);
+      }
       else if  (step.action === 'select')
       {
         selector = step.value;
