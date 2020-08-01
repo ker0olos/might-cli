@@ -1,6 +1,8 @@
 [![npm (tag)](https://img.shields.io/npm/v/might-cli/latest)](http://npmjs.com/package/might-cli)
 ![npm](https://img.shields.io/npm/dm/might-cli)
 
+**This project is still new, issues are to be expected.**
+
 ## Problem
 
 End-to-end testing can get very complicated and can be overwhelming; especially if you want to start testing a huge app, that would take a lot of time and afford, and will boring and repetitive.
@@ -50,7 +52,16 @@ When the test is performed for the second time, we again take a screenshot of it
 
 [![](./screenshots/4.png)](https://github.com/ItsKerolos/might-cli/raw/master/screenshots/4.png)
 
+---
 
-## How does it work?
+## What can it do?
 
-Puppeteer, because of course it is, but if you're still curious, feel free to have a look at [runner.js](https://github.com/ItsKerolos/might-cli/blob/master/src/runner.js).
+- Waiting
+- Changing the Viewport
+- Setting Media Features
+- Keypresses
+- Hovering
+- Clicking
+- Typing
+
+**How does it work?** Puppeteer, because of course it is, but if you're still curious, feel free to have a look at [runner.js](https://github.com/ItsKerolos/might-cli/blob/master/src/runner.js).
