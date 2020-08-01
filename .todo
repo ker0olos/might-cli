@@ -5,8 +5,7 @@ Documentation:
 Map:
 
 Runner:
-  ☐ Enable touchscreen?
-  ☐ Touch events and swiping
+  ☐ Swiping
 
 CLI:
   ☐ output unused screenshots to the terminal and add a option to clean them @low

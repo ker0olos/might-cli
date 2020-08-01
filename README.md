@@ -64,4 +64,6 @@ When the test is performed for the second time, we again take a screenshot of it
 - Clicking
 - Typing
 
+Want something that we don't support yet?  [Feature Request](https://github.com/ItsKerolos/might-cli/issues/new?template=feature_request.md).
+
 **How does it work?** Puppeteer, because of course it is, but if you're still curious, feel free to have a look at [runner.js](https://github.com/ItsKerolos/might-cli/blob/master/src/runner.js).

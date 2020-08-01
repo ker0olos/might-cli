@@ -160,7 +160,14 @@ export async function runner(options, callback)
   // launch puppeteer
   const browser = await puppeteer.launch({
     timeout: options.stepTimeout,
-    defaultViewport: { width: options.viewport.width, height: options.viewport.height },
+    defaultViewport: {
+      hasTouch: false,
+      width: options.viewport.width,
+      height: options.viewport.height,
+      isMobile: false,
+      isLandscape: false,
+      deviceScaleFactor: 1
+    },
     args: [ '--no-sandbox', '--disable-setuid-sandbox' ]
   });
 
@@ -200,11 +207,20 @@ export async function runner(options, callback)
       }
       else if  (step.action === 'viewport')
       {
+        let touch = false;
+
         const [ width, height ] = step.value.split('x');
 
+        if (height.endsWith('t'))
+          touch = true;
+
         await page.setViewport({
+          hasTouch: touch,
           width: parseInt(width),
-          height: parseInt(height)
+          height: parseInt(height),
+          isMobile: false,
+          isLandscape: false,
+          deviceScaleFactor: 1
         });
       }
       else if  (step.action === 'media')
