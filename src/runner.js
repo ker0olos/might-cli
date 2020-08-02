@@ -126,20 +126,27 @@ export async function runner(options, callback)
   let updated = 0;
   let failed = 0;
   
-  // filter tests using maps and target
-  if (Array.isArray(options.target))
+  // skipping broken tests
+  // and filtering targets
   {
     map = map.filter((t) =>
     {
+      // skip tests with no steps
+      if (!t.steps || t.steps.length <= 0)
+        skipped.push(t);
       // leave the test in map
       // if its a target
-      if (options.target.includes(t.title))
-        return true;
-      // remove test from map
-      // push it to a different array
-      // to allow us to output skipped tests to terminal
+      else if (Array.isArray(options.target))
+      {
+        if (options.target.includes(t.title))
+          return true;
+        else
+          skipped.push(t);
+      }
       else
-        skipped.push(t);
+      {
+        return true;
+      }
     });
   }
 
