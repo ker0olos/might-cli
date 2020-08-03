@@ -5,7 +5,8 @@ Documentation:
 Map:
 
 Runner:
-  ☐ Swiping
 
 CLI:
+  ☐ coverage reports
+
   ☐ output unused screenshots to the terminal and add a option to clean them @low

@@ -184,7 +184,7 @@ export async function runner(options, callback)
   // run tests in sequence
   for (const t of map)
   {
-    const title = t.title || stepsToString(t.steps);
+    const title = t.title || stepsToString(t.steps, true).trim();
 
     let selector;
 
@@ -250,6 +250,72 @@ export async function runner(options, callback)
       else if (step.action === 'click')
       {
         await page.click(selector);
+      }
+      else if (step.action === 'drag')
+      {
+        // dragging an element to a specified location
+        // (relative to selected element)
+
+        let [ x1, y1 ] = step.value;
+
+        const elem = await page.$(selector);
+
+        const boundingBox = await elem.boundingBox();
+
+        const { width, height } = page.viewport();
+
+        const x0 = (boundingBox.x + boundingBox.width) * 0.5;
+        const y0 = (boundingBox.y + boundingBox.height) * 0.5;
+
+        // offset unit (relative to element x-axis)
+        if (x1.endsWith?.('f'))
+          x1 = x0 + parseInt(x1);
+        // viewport unit (relative to viewport width)
+        else if (x1.endsWith?.('v'))
+          x1 = (parseInt(x1) / 100) * width;
+        // default (relative to parent position)
+        else
+          x1 = parseInt(x1);
+
+        // offset unit (relative to element y-axis)
+        if (y1.endsWith?.('f'))
+          y1 = y0 + parseInt(y1);
+        // viewport unit (relative to viewport height)
+        else if (y1.endsWith?.('v'))
+          y1 = (parseInt(y1) / 100) * height;
+        // default (relative to parent position)
+        else
+          y1 = parseInt(y1);
+
+        await page.mouse.move(x0, y0);
+        await page.mouse.down();
+
+        await page.mouse.move(x1, y1);
+        await page.mouse.up();
+      }
+      else if (step.action === 'swipe')
+      {
+        // swiping across the viewport
+        // from a specified location
+        // to another specified location
+
+        let [ x0, y0, x1, y1 ] = step.value;
+
+        const { width, height } = page.viewport();
+
+        // viewport unit (v) (relative to viewport height)
+
+        x0 = x0.endsWith?.('v') ? (parseInt(x0) / 100) * width : parseInt(x0);
+        x1 = x1.endsWith?.('v') ? (parseInt(x1) / 100) * width : parseInt(x1);
+
+        y0 = y0.endsWith?.('v') ? (parseInt(y0) / 100) * height : parseInt(y0);
+        y1 = y1.endsWith?.('v') ? (parseInt(y1) / 100) * height : parseInt(y1);
+
+        await page.mouse.move(x0, y0);
+        await page.mouse.down();
+
+        await page.mouse.move(x1, y1);
+        await page.mouse.up();
       }
       else if (step.action === 'keyboard')
       {
@@ -353,7 +419,7 @@ export async function runner(options, callback)
   
       // all steps were executed
   
-      const screenshotId = stepsToString(t.steps, '_').split(' ').join('_').toLowerCase();
+      const screenshotId = stepsToString(t.steps).replace(/\s+/g, '_');
       const screenshotPath = join(options.dir, `${screenshotId}.png`);
   
       const screenshotExists = await pathExists(screenshotPath);
