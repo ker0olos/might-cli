@@ -249,7 +249,12 @@ export async function runner(options, callback)
       }
       else if (step.action === 'click')
       {
-        await page.click(selector);
+        const { hasTouch } = page.viewport();
+
+        if (hasTouch)
+          await page.tap(selector);
+        else
+          await page.click(selector, { button: 'left' });
       }
       else if (step.action === 'drag')
       {
@@ -288,10 +293,10 @@ export async function runner(options, callback)
           y1 = parseInt(y1);
 
         await page.mouse.move(x0, y0);
-        await page.mouse.down();
+        await page.mouse.down({ button: 'left' });
 
         await page.mouse.move(x1, y1);
-        await page.mouse.up();
+        await page.mouse.up({ button: 'left' });
       }
       else if (step.action === 'swipe')
       {
@@ -312,10 +317,10 @@ export async function runner(options, callback)
         y1 = y1.endsWith?.('v') ? (parseInt(y1) / 100) * height : parseInt(y1);
 
         await page.mouse.move(x0, y0);
-        await page.mouse.down();
+        await page.mouse.down({ button: 'left' });
 
         await page.mouse.move(x1, y1);
-        await page.mouse.up();
+        await page.mouse.up({ button: 'left' });
       }
       else if (step.action === 'keyboard')
       {
