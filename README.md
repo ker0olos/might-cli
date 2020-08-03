@@ -62,6 +62,8 @@ When the test is performed for the second time, we again take a screenshot of it
 - Keypresses
 - Hovering
 - Clicking
+- Dragging Element
+- Swiping the Screen
 - Typing
 
 Want something that we don't support yet?  [Feature Request](https://github.com/ItsKerolos/might-cli/issues/new?template=feature_request.md).
