@@ -62,7 +62,7 @@ When the test is performed for the second time, we again take a screenshot of it
 - Keypresses
 - Hovering
 - Clicking
-- Dragging Element
+- Dragging Elements
 - Swiping the Screen
 - Typing
 
