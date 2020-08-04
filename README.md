@@ -48,7 +48,7 @@ The first time each individual test is performed, we screenshot its outcome (aft
 
 [![](./screenshots/3.png)](https://github.com/ItsKerolos/might-cli/raw/master/screenshots/3.png)
 
-When the test is performed for the second time, we again take a screenshot of its outcome, but this time it's compared with the first-run screenshot, if both match then the test is passed, but if they mismatch then the test fails, in that case a diff-image will be created at the inside the project's directory to show you the difference between both screenshots.
+When the test is performed for the second time, we again take a screenshot of its outcome, but this time it's compared with the first-run screenshot, if both match then the test is passed, but if they mismatch then the test fails, in that case a diff-image will be created inside the project's directory to show you the difference between both screenshots.
 
 [![](./screenshots/4.png)](https://github.com/ItsKerolos/might-cli/raw/master/screenshots/4.png)
 
