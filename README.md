@@ -3,15 +3,15 @@
 
 **This project is still new, issues are to be expected.**
 
-## Problem
+## The Problem
 
-End-to-end testing can get very complicated and can be overwhelming; especially if you want to start testing a huge app, that would take a lot of time and afford, and will boring and repetitive.
+End-to-end testing can get very complicated and overwhelming; especially if you want to start testing a huge app, that would take a lot of time and afford, and will be boring and repetitive.
 
-## Solution
+## The Solution
 
-A no-code (almost zero-config) method to perform end-to-end tests, handling most of the mess in the background.
+A no-code (almost zero-config) method to perform and manage end-to-end tests, handling most of the mess in the background.
 
-[Might](https://github.com/ItsKerolos/Might) is an easy way to create, manage and edit tests, it was designed to make the whole process easier and faster.
+[Might UI](https://github.com/ItsKerolos/Might) is an easy way to create, manage and edit tests, it was designed to make the whole process easier and way faster.
 
 But this, might-cli, is how your run those tests.
 
