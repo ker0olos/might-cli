@@ -426,7 +426,7 @@ export async function runner(options, callback)
   
       // all steps were executed
   
-      const screenshotId = md5(stepsToString(t.steps).replace(/\s+/g, '_'));
+      const screenshotId = md5(stepsToString(t.steps));
       const screenshotPath = join(options.dir, `${screenshotId}.png`);
   
       const screenshotExists = await pathExists(screenshotPath);
