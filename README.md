@@ -52,12 +52,15 @@ When the test is performed for the second time, we again take a screenshot of it
 
 [![](./screenshots/4.png)](https://github.com/ItsKerolos/might-cli/raw/master/screenshots/4.png)
 
+run `npx might -h` to see additional information.
+
 ---
 
 ## What can it do?
 
 - Waiting
 - Changing the Viewport
+- Going to Different Pages.
 - Setting Media Features
 - Keypresses
 - Hovering

@@ -186,7 +186,10 @@ export async function runner(options, callback)
   // run tests in sequence
   for (const t of map)
   {
-    const title = t.title || stepsToString(t.steps, true).trim();
+    const title = t.title || stepsToString(t.steps, {
+      pretty: true,
+      url: options.url
+    }).trim();
 
     let selector;
 
@@ -230,6 +233,17 @@ export async function runner(options, callback)
           isMobile: false,
           isLandscape: false,
           deviceScaleFactor: 1
+        });
+      }
+      else if (step.action === 'goto')
+      {
+        let url = step.value;
+
+        if (url.startsWith('/'))
+          url = `${options.url}${url}`;
+
+        await page.goto(url, {
+          timeout: options.stepTimeout
         });
       }
       else if  (step.action === 'media')

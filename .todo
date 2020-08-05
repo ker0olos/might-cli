@@ -7,7 +7,6 @@ Documentation:
 Map:
 
 Runner:
-  ☐ goto action
 
 CLI:
   ☐ coverage reports
