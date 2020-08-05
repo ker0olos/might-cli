@@ -1,6 +1,6 @@
 {
   "name": "might-cli",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
@@ -34,6 +34,7 @@
   "dependencies": {
     "@babel/runtime": "^7.11.0",
     "fs-extra": "^9.0.1",
+    "md5": "^2.3.0",
     "might-core": "^0.2.4",
     "pixelmatch": "^5.2.1",
     "pngjs": "^5.0.0",

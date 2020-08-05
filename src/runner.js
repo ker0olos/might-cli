@@ -6,6 +6,8 @@ import { keyDefinitions } from 'puppeteer/lib/cjs/puppeteer/common/USKeyboardLay
 
 import pixelmatch from 'pixelmatch';
 
+import md5 from 'md5';
+
 import { join } from 'path';
 
 import { pathExists, ensureDir, readFile } from 'fs-extra';
@@ -424,7 +426,7 @@ export async function runner(options, callback)
   
       // all steps were executed
   
-      const screenshotId = stepsToString(t.steps).replace(/\s+/g, '_');
+      const screenshotId = md5(stepsToString(t.steps).replace(/\s+/g, '_'));
       const screenshotPath = join(options.dir, `${screenshotId}.png`);
   
       const screenshotExists = await pathExists(screenshotPath);
