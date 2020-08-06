@@ -239,12 +239,27 @@ export async function runner(options, callback)
       {
         let url = step.value;
 
-        if (url.startsWith('/'))
-          url = `${options.url}${url}`;
+        if (url === 'back')
+        {
+          await page.goBack({
+            timeout: options.stepTimeout
+          });
+        }
+        else if (url === 'forward')
+        {
+          await page.goForward({
+            timeout: options.stepTimeout
+          });
+        }
+        else
+        {
+          if (url.startsWith('/'))
+            url = `${options.url}${url}`;
 
-        await page.goto(url, {
-          timeout: options.stepTimeout
-        });
+          await page.goto(url, {
+            timeout: options.stepTimeout
+          });
+        }
       }
       else if  (step.action === 'media')
       {
