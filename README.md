@@ -36,7 +36,7 @@ npm install --save-dev might-cli`
 
 ---
 
-Now you have to create a few tests to run, tests are described inside a file called `might.map.json`, the easiest way to create those tests and that file is to use [might-ui](https://github.com/ItsKerolos/Might), but if you really want to write tests manually read [map.md](https://github.com/ItsKerolos/might-core/blob/master/map.md) (not recommended).
+Now you have to create a few tests to run, tests are described inside a file called `might.map.json`, the easiest way to create those tests and that file is to use [might-ui](https://github.com/ItsKerolos/Might), but if you really want to write tests manually read [map.md](https://github.com/ItsKerolos/might-cli/blob/master/map.md) (not recommended).
 
 When you're done, make sure to save the file to `might.map.json` inside the root of your project's directory or might-cli won't be able to see it.
 
