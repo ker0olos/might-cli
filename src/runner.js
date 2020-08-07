@@ -106,12 +106,12 @@ export async function runner(options, callback)
 {
   options = options || {};
 
-  options.stepTimeout = options.stepTimeout || 15000;
-
   options.viewport = options.viewport || {};
 
   options.viewport.width = options.viewport.width || 1366;
   options.viewport.height = options.viewport.height || 768;
+
+  options.stepTimeout = options.stepTimeout || 15000;
 
   let map = options.map;
 
@@ -170,7 +170,7 @@ export async function runner(options, callback)
 
   // launch puppeteer
   const browser = await puppeteer.launch({
-    timeout: options.stepTimeout,
+    timeout: 15000,
     defaultViewport: {
       hasTouch: false,
       width: options.viewport.width,
@@ -453,9 +453,9 @@ export async function runner(options, callback)
 
       // go to the web app's url (retry enabled)
       await retry(
-        () => page.goto(options.url, { timeout: 10000 }),
+        () => page.goto(options.url, { timeout: options.stepTimeout }),
         1000,
-        60000
+        options.stepTimeout
       );
 
       // run the steps
@@ -549,20 +549,20 @@ export async function runner(options, callback)
   // process the coverage of all the tests
   if (options.coverage)
   {
-    console.log('generating coverage report...');
+    // console.log('generating coverage report...');
 
-    const sourceDir = join(options.coverageDir, '__tmp__');
+    // const sourceDir = join(options.coverageDir, '__tmp__');
 
     // empties and ensures that the coverage directories exists
-    await emptyDir(options.coverageDir);
+    // await emptyDir(options.coverageDir);
   
     // process and transform all the data
     // then uses istanbul to write a report to disk
     // TODO handle the entire array
     
-    console.log('actual length of coverage data is', coverageData.length, 'But we only are processing', 1);
+    // console.log('actual length of coverage data is', coverageData.length, 'But we only are processing', 1);
 
-    await coverage(coverageData[0], '/src/**', options.coverageDir, sourceDir);
+    // await coverage(coverageData[0], '/src/**', options.coverageDir, sourceDir);
   }
 
   callback('done', {

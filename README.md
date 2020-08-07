@@ -29,10 +29,11 @@ npm install --save-dev might-cli`
 
 1. You will be asked to set a command that starts the development server of your app, it's spawned before testing begins and terminated after the testing is done (optional).
 2. The URL of the app (required).
-3. The default viewport of the app (optional).
 
 ##### Like this:
 [![](./screenshots/2.png)](https://github.com/ItsKerolos/might-cli/raw/master/screenshots/2.png)
+
+**More optional configurations** are available in `might.config.json`, which will be created in your project's directory after you finish those 2 prompts.
 
 ---
 
@@ -52,7 +53,7 @@ When the test is performed for the second time, we again take a screenshot of it
 
 [![](./screenshots/4.png)](https://github.com/ItsKerolos/might-cli/raw/master/screenshots/4.png)
 
-run `npx might -h` to see additional information.
+run `npx might -h` to see additional information, like how to run specific tests and skip the rest.
 
 ---
 

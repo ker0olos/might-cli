@@ -2,8 +2,6 @@ Performance Issues and Bugs:
   ☐ drag and swipe use mouse events even if the viewport is touch enabled
     puppeteer does not support touch events at least none that I know of.
 
-  ☐ remove viewport prompt from bew config gens
-
 Documentation:
   ☐ coverage reports
 

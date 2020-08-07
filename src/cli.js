@@ -17,6 +17,7 @@ import { runner } from './runner.js';
 * @property { string } startCommand
 * @property { string } url
 * @property { { width: number, height: number } } viewport
+* @property { number } defaultTimeout
 */
 
 /** the start command process
@@ -69,24 +70,16 @@ async function readConfig()
 
     const url = await terminal.inputField().promise;
 
-    terminal('\n');
-
-    terminal('\n[e.i., 1280x720] [optional]\n');
-    terminal.bold('Enter the default viewport of the app: ');
-
-    const viewport = await terminal.inputField().promise;
-
-    const [ width, height ] = viewport.split('x');
-
     terminal('\n\n');
 
     config = {
       startCommand,
-      url: url || 'http://localhost:8080',
+      url: url ?? 'http://localhost:8080',
       viewport: {
-        width: parseInt(width),
-        height: parseInt(height)
-      }
+        width: null,
+        height: null
+      },
+      defaultTimeout: null
     };
 
     await writeJSON(resolve('might.config.json'), config, { spaces: 2 });
@@ -262,7 +255,8 @@ async function run(map, target, update, coverage, config)
     update,
     coverage,
     screenshotsDir: resolve('__might__'),
-    coverageDir: resolve('__coverage__')
+    coverageDir: resolve('__coverage__'),
+    stepTimeout: config.defaultTimeout
   }, (type, value) =>
   {
     // the amount of tasks that are going to run
