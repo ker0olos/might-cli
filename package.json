@@ -1,6 +1,6 @@
 {
   "name": "might-cli",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
@@ -29,18 +29,25 @@
     "ui-testing",
     "end-to-end-test",
     "end-to-end-test-automation",
-    "end-to-end-testing"
+    "end-to-end-testing",
+    "end-to-end-testing-interface"
   ],
   "dependencies": {
     "@babel/runtime": "^7.11.0",
     "fs-extra": "^9.0.1",
+    "glob-to-regexp": "^0.4.1",
+    "istanbul-lib-coverage": "^3.0.0",
+    "istanbul-lib-report": "^3.0.0",
+    "istanbul-reports": "^3.0.2",
     "md5": "^2.3.0",
     "might-core": "^0.3.1",
+    "node-fetch": "^2.6.0",
     "pixelmatch": "^5.2.1",
     "pngjs": "^5.0.0",
     "ps-tree": "^1.2.0",
     "puppeteer": "^5.2.1",
-    "terminal-kit": "^1.42.0"
+    "terminal-kit": "^1.42.0",
+    "v8-to-istanbul": "file:v8-to-istanbul"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.5",

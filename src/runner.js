@@ -10,9 +10,11 @@ import md5 from 'md5';
 
 import { join } from 'path';
 
-import { pathExists, ensureDir, readFile } from 'fs-extra';
+import { pathExists, ensureDir, readFile, emptyDir } from 'fs-extra';
 
 import { stepsToString } from 'might-core';
+
+import { coverage } from './coverage.js';
 
 /**
 * @typedef { Test[] } Map
@@ -91,9 +93,11 @@ function retry(fn, delay, maxTime)
   url: string,
   viewport: { width: number, height: number },
   map: Map,
-  update: boolean,
   target: string[],
-  dir: string,
+  update: boolean,
+  coverage: boolean,
+  screenshotsDir: string,
+  coverageDir: string,
   stepTimeout: number
  } } options
 * @param { (type: 'started' | 'progress' | 'error' | 'done', value: any) => void } callback
@@ -101,8 +105,6 @@ function retry(fn, delay, maxTime)
 export async function runner(options, callback)
 {
   options = options || {};
-
-  options.dir = options.dir || join(__dirname, '../__might__');
 
   options.stepTimeout = options.stepTimeout || 15000;
 
@@ -127,30 +129,30 @@ export async function runner(options, callback)
   let passed = 0;
   let updated = 0;
   let failed = 0;
+
+  const coverageData = [];
   
   // skipping broken tests
   // and filtering targets
+  map = map.filter((t) =>
   {
-    map = map.filter((t) =>
-    {
-      // skip tests with no steps
-      if (!t.steps || t.steps.length <= 0)
-        skipped.push(t);
+    // skip tests with no steps
+    if (!t.steps || t.steps.length <= 0)
+      skipped.push(t);
       // leave the test in map
       // if its a target
-      else if (Array.isArray(options.target))
-      {
-        if (options.target.includes(t.title))
-          return true;
-        else
-          skipped.push(t);
-      }
-      else
-      {
+    else if (Array.isArray(options.target))
+    {
+      if (options.target.includes(t.title))
         return true;
-      }
-    });
-  }
+      else
+        skipped.push(t);
+    }
+    else
+    {
+      return true;
+    }
+  });
 
   // if map has no tests or if all tests were skipped
   if (map.length <= 0)
@@ -164,7 +166,7 @@ export async function runner(options, callback)
   }
 
   // ensure the screenshots directory exists
-  await ensureDir(options.dir);
+  await ensureDir(options.screenshotsDir);
 
   // launch puppeteer
   const browser = await puppeteer.launch({
@@ -433,6 +435,15 @@ export async function runner(options, callback)
 
       const page = await browser.newPage();
 
+      // start collecting coverage
+      if (options.coverage)
+      {
+        await Promise.all([
+          page.coverage.startJSCoverage(),
+          page.coverage.startCSSCoverage()
+        ]);
+      }
+
       // an attempt to make tests more consistent
       // through different machines
       await page.setExtraHTTPHeaders({
@@ -456,7 +467,7 @@ export async function runner(options, callback)
       // all steps were executed
   
       const screenshotId = md5(stepsToString(t.steps));
-      const screenshotPath = join(options.dir, `${screenshotId}.png`);
+      const screenshotPath = join(options.screenshotsDir, `${screenshotId}.png`);
   
       const screenshotExists = await pathExists(screenshotPath);
   
@@ -498,6 +509,21 @@ export async function runner(options, callback)
 
         passed = passed + 1;
       }
+
+      // stop collecting coverage
+      if (options.coverage)
+      {
+        const [ jsCoverage, cssCoverage ] = await Promise.all([
+          page.coverage.stopJSCoverage(),
+          page.coverage.stopCSSCoverage()
+        ]);
+
+        coverageData.push({
+          url: page.url(),
+          js: jsCoverage,
+          css: cssCoverage
+        });
+      }
     }
     catch (e)
     {
@@ -519,6 +545,25 @@ export async function runner(options, callback)
 
   // close puppeteer
   await browser.close();
+
+  // process the coverage of all the tests
+  if (options.coverage)
+  {
+    console.log('generating coverage report...');
+
+    const sourceDir = join(options.coverageDir, '__tmp__');
+
+    // empties and ensures that the coverage directories exists
+    await emptyDir(options.coverageDir);
+  
+    // process and transform all the data
+    // then uses istanbul to write a report to disk
+    // TODO handle the entire array
+    
+    console.log('actual length of coverage data is', coverageData.length, 'But we only are processing', 1);
+
+    await coverage(coverageData[0], '/src/**', options.coverageDir, sourceDir);
+  }
 
   callback('done', {
     total: map.length + skipped.length,

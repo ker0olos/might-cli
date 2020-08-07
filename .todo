@@ -2,13 +2,19 @@ Performance Issues and Bugs:
   ☐ drag and swipe use mouse events even if the viewport is touch enabled
     puppeteer does not support touch events at least none that I know of.
 
+  ☐ remove viewport prompt from bew config gens
+
 Documentation:
+  ☐ coverage reports
 
 Map:
 
 Runner:
-
-CLI:
   ☐ coverage reports
 
+  ☐ parallel runnings tests
+    - config entry for default
+    - cil argument to override
+
+CLI:
   ☐ output unused screenshots to the terminal and add a option to clean them @low

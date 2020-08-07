@@ -24,7 +24,7 @@ import { runner } from './runner.js';
 */
 let running;
 
-function path(...args)
+function resolve(...args)
 {
   return join(process.cwd(), ...args);
 }
@@ -45,7 +45,7 @@ async function readConfig()
 
   try
   {
-    config = await readJSON(path('might.config.json'));
+    config = await readJSON(resolve('might.config.json'));
   }
   catch
   {
@@ -89,7 +89,7 @@ async function readConfig()
       }
     };
 
-    await writeJSON(path('might.config.json'), config, { spaces: '\t' });
+    await writeJSON(resolve('might.config.json'), config, { spaces: 2 });
   }
   finally
   {
@@ -107,7 +107,7 @@ async function readMap(dialog)
 
   try
   {
-    map = (await readJSON(path('might.map.json'))).data;
+    map = (await readJSON(resolve('might.map.json'))).data;
   }
   catch
   {
@@ -134,12 +134,14 @@ async function main()
   {
     terminal('Options:\n');
 
-    terminal('\n--help (-h)           Opens this help menu.');
-    terminal('\n--update (-u)         Updates all target screenshots.');
+    terminal('\n--help (-h)                Opens this help menu.');
+    terminal('\n--update (-u)              Updates all targeted screenshots.');
+    terminal('\n--collect-coverage (-c)    Outputs a coverage report at the end.');
 
-    terminal('\n--map (-m)            Opens Might UI.');
-
-    terminal('\n--target (-t)         List the tests that should run (use their titles --- separate them with a comma)');
+    
+    terminal('\n--target (-t)              List the tests that should run (use their titles and separate them with a comma)');
+    
+    terminal('\n--map (-m)                 Opens Might UI.');
   }
   // opens might-ui (even if not installed because npx is cool)
   else if (process.argv.includes('--map') || process.argv.includes('-m'))
@@ -187,7 +189,9 @@ async function main()
 
     const update = process.argv.includes('--update') || process.argv.includes('-u');
 
-    await run(map, target, update, config);
+    const coverage = process.argv.includes('--collect-coverage') || process.argv.includes('-c');
+
+    await run(map, target, update, coverage, config);
   }
 }
 
@@ -232,9 +236,11 @@ function kill()
 * to the terminal
 * @param { import('./runner.js').Map } map
 * @param { [] } target
+* @param { boolean } update
+* @param { boolean } coverage
 * @param { Config } config
 */
-async function run(map, target, update, config)
+async function run(map, target, update, coverage, config)
 {
   // hide cursor
   terminal.hideCursor(true);
@@ -252,9 +258,11 @@ async function run(map, target, update, config)
       height: config.viewport.height
     },
     map,
-    update,
     target,
-    dir: path('__might__')
+    update,
+    coverage,
+    screenshotsDir: resolve('__might__'),
+    coverageDir: resolve('__coverage__')
   }, (type, value) =>
   {
     // the amount of tasks that are going to run
@@ -268,7 +276,7 @@ async function run(map, target, update, config)
       if (value.diff)
       {
         //  write the difference error to disk
-        const diffLocation = path(`might.error.${new Date().toISOString()}.png`);
+        const diffLocation = resolve(`might.error.${new Date().toISOString()}.png`);
 
         writeFileSync(diffLocation, value.diff);
 
