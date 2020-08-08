@@ -1,7 +1,10 @@
 node_modules
-build
 
 __might__
 __coverage__
 
 might.*
+
+v8-to-istanbul
+
+build

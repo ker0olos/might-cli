@@ -33,29 +33,28 @@
     "end-to-end-testing-interface"
   ],
   "dependencies": {
-    "@babel/runtime": "^7.11.0",
+    "@babel/runtime": "^7.11.2",
+    "ansi-colors": "^4.1.1",
+    "bluebird": "^3.7.2",
+    "draftlog": "^1.0.12",
+    "exit": "^0.1.2",
     "fs-extra": "^9.0.1",
-    "glob-to-regexp": "^0.4.1",
-    "istanbul-lib-coverage": "^3.0.0",
-    "istanbul-lib-report": "^3.0.0",
-    "istanbul-reports": "^3.0.2",
     "md5": "^2.3.0",
     "might-core": "^0.3.1",
     "node-fetch": "^2.6.0",
     "pixelmatch": "^5.2.1",
     "pngjs": "^5.0.0",
+    "prompts": "^2.3.2",
     "ps-tree": "^1.2.0",
-    "puppeteer": "^5.2.1",
-    "terminal-kit": "^1.42.0",
-    "v8-to-istanbul": "file:v8-to-istanbul"
+    "puppeteer": "^5.2.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.10.5",
-    "@babel/core": "^7.10.5",
-    "@babel/plugin-transform-runtime": "^7.10.5",
-    "@babel/preset-env": "^7.10.4",
+    "@babel/core": "^7.11.1",
+    "@babel/plugin-transform-runtime": "^7.11.0",
+    "@babel/preset-env": "^7.11.0",
     "babel-eslint": "^10.1.0",
-    "eslint": "^7.5.0",
+    "eslint": "^7.6.0",
     "eslint-plugin-security": "^1.4.0"
   }
 }

@@ -9,10 +9,8 @@ Map:
 
 Runner:
   ☐ coverage reports
-
-  ☐ parallel runnings tests
-    - config entry for default
-    - cil argument to override
+    - reinstall dependencies
+      glob-to-regexp istanbul-lib-coverage istanbul-lib-report istanbul-reports ./v8-to-istanbul
 
 CLI:
   ☐ output unused screenshots to the terminal and add a option to clean them @low

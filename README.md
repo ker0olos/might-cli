@@ -53,7 +53,7 @@ When the test is performed for the second time, we again take a screenshot of it
 
 [![](./screenshots/4.png)](https://github.com/ItsKerolos/might-cli/raw/master/screenshots/4.png)
 
-run `npx might -h` to see additional information, like how to run specific tests and skip the rest.
+#### run `npx might -h` to see additional information about how to run specific tests and skip the rest, how to update failed tests, and how to control the amount of parallel tests.
 
 ---
 
@@ -70,6 +70,6 @@ run `npx might -h` to see additional information, like how to run specific tests
 - Swiping the Screen
 - Typing
 
-Want something that we don't support yet?  [Feature Request](https://github.com/ItsKerolos/might-cli/issues/new?template=feature_request.md).
+Want a feature that we don't have yet? open a [feature request](https://github.com/ItsKerolos/might-cli/issues/new?template=feature_request.md).
 
 **How does it work?** Puppeteer, because of course it is, but if you're still curious, feel free to have a look at [runner.js](https://github.com/ItsKerolos/might-cli/blob/master/src/runner.js).

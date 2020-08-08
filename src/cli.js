@@ -1,6 +1,9 @@
 #! /usr/bin/env node
 
-import { terminal } from 'terminal-kit';
+import c from 'ansi-colors';
+import prompts from 'prompts';
+
+import draftlog from 'draftlog';
 
 import { join } from 'path';
 
@@ -8,7 +11,7 @@ import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
 
 import { spawn } from 'child_process';
 
-import psTree from 'ps-tree';
+import exit from 'exit';
 
 import { runner } from './runner.js';
 
@@ -17,6 +20,7 @@ import { runner } from './runner.js';
 * @property { string } startCommand
 * @property { string } url
 * @property { { width: number, height: number } } viewport
+* @property { number } parallelTests
 * @property { number } defaultTimeout
 */
 
@@ -50,35 +54,49 @@ async function readConfig()
   }
   catch
   {
-    terminal.bold.yellow('[WARN: Config is missing or corrupted]\n');
-    terminal('Do you want to create a new config? ').bold('[Y/n]\n');
+    console.log(c.bold.yellow('? Config is missing or corrupted.'));
 
-    const result = await terminal.yesOrNo({ yes: [ 'Y' ], no: [ 'n' ] }).promise;
+    const newConfig = await prompts({
+      type: 'toggle',
+      name: 'value',
+      message: 'Do you want to create a new config?',
+      initial: false,
+      active: 'yes',
+      inactive: 'no'
+    });
+    
+    if (!newConfig.value)
+      return;
+      
+    console.log('\n? (e.g. npm run start) [Leave empty if none is needed].');
 
-    if (!result)
+    const startCommand = await prompts({
+      type: 'text',
+      name: 'value',
+      message: 'Enter a command that starts a http server for your app:'
+    });
+
+    console.log('\n? (e.g. http://localhost:8080) [required]');
+
+    const url = await prompts({
+      type: 'text',
+      name: 'value',
+      message: 'Enter the URL of your app:'
+    });
+
+    if (!url.value)
       return;
 
-    terminal('\n[e.i., npm run start] [Leave empty if none is needed]\n');
-    terminal.bold('Enter a command that starts a http server for your app: ');
-
-    const startCommand = await terminal.inputField().promise;
-
-    terminal('\n');
-
-    terminal('\n[e.i., http://localhost:8080] [required]\n');
-    terminal.bold('Enter the URL of your app: ');
-
-    const url = await terminal.inputField().promise;
-
-    terminal('\n\n');
+    console.log('');
 
     config = {
-      startCommand,
-      url: url ?? 'http://localhost:8080',
+      startCommand: startCommand.value || null,
+      url: url.value,
       viewport: {
         width: null,
         height: null
       },
+      parallelTests: null,
       defaultTimeout: null
     };
 
@@ -107,10 +125,10 @@ async function readMap(dialog)
     if (!dialog)
       return;
 
-    terminal.bold.yellow('[WARN: Map is missing or corrupted]\n');
-    terminal.bold('[INFO: Create "might.map.json" in the root of the project and add your tests to it]\n');
+    console.log(c.bold.yellow('[WARN: Map is missing or corrupted]'));
+    console.log(c.bold('Make sure you have a file called "might.map.json" in the root of the project\'s directory.'));
 
-    terminal('\n');
+    console.log('');
   }
   finally
   {
@@ -125,25 +143,27 @@ async function main()
   // open help menu
   if (process.argv.includes('--help') || process.argv.includes('-h'))
   {
-    terminal('Options:\n');
+    console.log(c.bold.cyan('--help (-h)'), '    Opens this help menu.');
+    console.log(c.bold.cyan('--map (-m)'), '     Opens Might UI (even if not installed).');
 
-    terminal('\n--help (-h)                Opens this help menu.');
-    terminal('\n--update (-u)              Updates all targeted screenshots.');
-    terminal('\n--collect-coverage (-c)    Outputs a coverage report at the end.');
+    console.log('');
 
-    
-    terminal('\n--target (-t)              List the tests that should run (use their titles and separate them with a comma)');
-    
-    terminal('\n--map (-m)                 Opens Might UI.');
+    console.log(c.bold.cyan('--target (-t)'), '  List the tests that should run (use their titles and separate them with a comma).');
+    console.log(c.bold.cyan('--update (-u)'), '  Updates the screenshots of targeted tests (if no tests were targeted it updates any failed tests).');
+
+    console.log('');
+
+    console.log(c.bold.cyan('--parallel (-p)'), 'Control how many tests should be allowed to run at the same time.');
+    // console.log(c.bold.cyan('--collect-coverage (-c)'), ' Outputs a coverage report at the end.');
   }
   // opens might-ui (even if not installed because npx is cool)
   else if (process.argv.includes('--map') || process.argv.includes('-m'))
   {
     running = spawn('npx might-ui', { shell: true, cwd: process.cwd() });
 
-    running.stdout.on('data', (data) => terminal(data.toString()));
+    running.stdout.on('data', (data) => console.log(data.toString()));
 
-    running.stderr.on('data', (data) => terminal.red(data.toString()));
+    running.stderr.on('data', (data) => console.log(c.red(data.toString())));
 
     // awaits for eternity
     await new Promise(() => undefined);
@@ -151,7 +171,7 @@ async function main()
   // start runner
   else
   {
-    let target;
+    let target, parallel;
 
     // read the config file
     const config = await readConfig();
@@ -176,6 +196,30 @@ async function main()
       if (target)
         target = target.match(/(?:\\,|[^,])+/g).map((t) => t.trim());
     }
+    else
+    {
+      target = undefined;
+    }
+
+    if (process.argv.some((s) => s.startsWith('--parallel')))
+      parallel = process.argv.findIndex((s) => s.startsWith('--parallel'));
+    else if (process.argv.includes('-p'))
+      parallel = process.argv.indexOf('-p');
+
+    if (parallel > -1)
+    {
+      // eslint-disable-next-line security/detect-object-injection
+      const value = process.argv[parallel];
+
+      if (value.includes('='))
+        parallel = parseInt(value.split('=')[1]);
+      else
+        parallel = parseInt(process.argv[parallel + 1]);
+    }
+    else
+    {
+      parallel = undefined;
+    }
 
     // read the map file
     const map = await readMap(true);
@@ -184,7 +228,7 @@ async function main()
 
     const coverage = process.argv.includes('--collect-coverage') || process.argv.includes('-c');
 
-    await run(map, target, update, coverage, config);
+    await run(map, target, update, parallel, coverage, config);
   }
 }
 
@@ -196,53 +240,25 @@ function start(command)
   running = spawn(command, { shell: true, cwd: process.cwd() });
 }
 
-function kill()
-{
-  return new Promise((resolve, reject) =>
-  {
-    // no running processes
-    if (!running)
-    {
-      resolve();
-
-      return;
-    }
-
-    // search for any grandchildren
-    psTree(running.pid, (err, children) =>
-    {
-      if (err)
-        reject(err);
-
-      // kill any grandchildren
-      children?.forEach(({ PID }) => process.kill(PID, 'SIGINT'));
-
-      // kill the original child
-      process.kill(running.pid, 'SIGINT');
-
-      resolve();
-    });
-  });
-}
-
 /** run the tests and output their progress and outcome
 * to the terminal
 * @param { import('./runner.js').Map } map
 * @param { [] } target
 * @param { boolean } update
+* @param { number } parallel
 * @param { boolean } coverage
 * @param { Config } config
 */
-async function run(map, target, update, coverage, config)
+async function run(map, target, update, parallel, coverage, config)
 {
   // hide cursor
-  terminal.hideCursor(true);
+  hideCursor();
 
   let interval;
 
-  let startTimestamp;
+  // let length = 0;
 
-  let index = 1, length = 0;
+  const running = {};
 
   await runner({
     url: config.url,
@@ -253,34 +269,42 @@ async function run(map, target, update, coverage, config)
     map,
     target,
     update,
+    parallel: parallel ?? config.parallelTests,
     coverage,
     screenshotsDir: resolve('__might__'),
     coverageDir: resolve('__coverage__'),
     stepTimeout: config.defaultTimeout
-  }, (type, value) =>
+  },
+  (type, value) =>
   {
     // the amount of tasks that are going to run
-    if (type === 'started')
-      length = value;
+    // if (type === 'started')
+    //   length = value;
 
     // an error occurred during a test
     if (type === 'error')
     {
-      // if there's a property called diff then the error is a mismatch
+      let error;
+
+      // if there's a property called diff that means that it's a mismatch error
       if (value.diff)
       {
-        //  write the difference error to disk
-        const diffLocation = resolve(`might.error.${new Date().toISOString()}.png`);
+        const filename = resolve(`might.error.${new Date().toISOString()}.png`);
 
-        writeFileSync(diffLocation, value.diff);
+        //  write the difference image to disk
+        writeFileSync(filename, value.diff);
 
-        terminal(`\n${diffLocation}\n`);
+        error = new Error(`${value.message}\n${c.yellow(`Diff Image: ${c.white(filename)}`)}`);
+      }
+      else
+      {
+        error = new Error(value.message || value);
       }
 
       if (interval)
         clearInterval(interval);
 
-      throw new Error(value.message || value);
+      throw error;
     }
 
     // all tests are done
@@ -289,148 +313,184 @@ async function run(map, target, update, coverage, config)
       // no tests at all
       if (value.total === 0 && value.skipped === 0)
       {
-        terminal.bold.yellow('Map has no tests.');
+        console.log(c.bold.yellow('Map has no tests.'));
       }
       // all tests were skipped
       else if (value.total === value.skipped)
       {
-        terminal.bold.magenta('All tests were skipped.');
+        console.log(c.bold.magenta('All tests were skipped.'));
       }
       // print a summary of all the tests
       else
       {
-        terminal.bold('\nSummary: ');
+        const passed = (value.passed) ? `${c.bold.green(`${value.passed} passed`)}, ` : '';
+        const updated = (value.updated) ? `${c.bold.yellow(`${value.updated} updated`)}, ` : '';
+        const skipped = (value.skipped) ? `${c.bold.magenta(`${value.skipped} skipped`)}, ` : '';
 
-        if (value.passed)
-          terminal.bold.green(`${value.passed} passed`)(', ');
+        const total = `${value.total} total`;
 
-        if (value.updated)
-          terminal.bold.yellow(`${value.updated} updated`)(', ');
+        if (update)
+        {
+          if (target)
+            console.log((`\nUpdate mode was on: all targeted tests were ${c.bold.yellow('UPDATED')}.`));
+          else
+            console.log((`\nUpdate mode was on: any ${c.red.bold('FAILED')} tests were ${c.bold.yellow('UPDATED')}.`));
+        }
+        else
+        {
+          // log new line
+          console.log();
+        }
 
-        if (value.skipped)
-          terminal.bold.magenta(`${value.skipped} skipped`)(', ');
-
-        terminal(`${value.total} total`);
+        console.log(`Summary: ${passed}${updated}${skipped}${total}.`);
       }
     }
 
     // one of the tests made progress
     if (type === 'progress')
     {
-      const time = roundTime(Date.now(), startTimestamp);
-
       if (value.state === 'running')
       {
-        terminal.saveCursor();
+        const animation = [ '|', '/', '-', '\\' ];
 
-        startTimestamp = Date.now();
+        const update = console.draft(c.bold.blueBright('RUNNING (|)'), value.title);
 
-        terminal.bold.brightBlue(`RUNNING (0.0s) (${index}/${length})`)(` ${value.title}\n`);
+        running[value.id] = {
+          frame: 1,
+          timestamp: Date.now(),
+          update: update
+        };
 
-        interval = setInterval(() =>
+        running[value.id].interval = setInterval(() =>
         {
-          terminal.restoreCursor();
-          terminal.eraseDisplayBelow();
+          const { timestamp, frame } = running[value.id];
 
-          const time = roundTime(Date.now(), startTimestamp);
+          const time = roundTime(Date.now(), timestamp);
 
-          terminal.bold.brightBlue(`RUNNING (${time}s) (${index}/${length})`)(` ${value.title}\n`);
-        }, 100);
+          // upgrade the animation to the next frame
+          if (frame >= 3)
+            running[value.id].frame = 0;
+          else
+            running[value.id].frame = frame + 1;
+
+          // show that a test is taking too much time (over 15 seconds)
+          if (time >= 15)
+            update(c.bold.blueBright('RUNNING'), c.bold.red(`(${time}s)`), value.title);
+          else
+            // eslint-disable-next-line security/detect-object-injection
+            update(c.bold.blueBright(`RUNNING (${animation[frame]})`), value.title);
+        }, 500);
       }
       else
       {
-        index = index + 1;
-
-        if (interval)
-          clearInterval(interval);
-
-        terminal.restoreCursor();
-        terminal.eraseDisplayBelow();
+        if (running[value.id].interval)
+          clearInterval(running[value.id].interval);
       }
 
       if (value.state === 'updated')
       {
-        terminal.bold.yellow(`UPDATED (${time}s)`)(` ${value.title}\n`);
+        const time = roundTime(Date.now(),  running[value.id].timestamp);
+
+        running[value.id].update(c.bold.yellow(`UPDATED (${time}s)`), value.title);
       }
       else if (value.state === 'failed')
       {
-        terminal.bold.red(`FAILED (${time}s)`)(` ${value.title}\n`);
+        const time = roundTime(Date.now(),  running[value.id].timestamp);
+
+        running[value.id].update(c.bold.red(`FAILED (${time}s)`), value.title);
       }
       else if (value.state === 'passed')
       {
-        terminal.bold.green(`PASSED (${time}s)`)(` ${value.title}\n`);
+        const time = roundTime(Date.now(),  running[value.id].timestamp);
+
+        running[value.id].update(c.bold.green(`PASSED (${time}s)`), value.title);
       }
     }
   });
+}
 
-  // show cursor again
-  terminal.hideCursor(false);
+function kill()
+{
+  // since the app can't run async code will running we spawn a process
+  // that will be kill any running children then exits automatically
+
+  if (running)
+    spawn(process.argv[0], [ join(__dirname, 'kill.js'), running.pid ]);
+}
+
+function showCursor()
+{
+  if (process.stderr.isTTY)
+    process.stderr.write('\u001B[?25h');
+}
+
+function hideCursor()
+{
+  if (process.stderr.isTTY)
+    process.stderr.write('\u001B[?25l');
 }
 
 function exitGracefully()
 {
   // ensure the to enable input and cursor
-  terminal.grabInput(false);
-  terminal.hideCursor(false);
+  showCursor();
 
-  terminal('\n');
+  console.log('');
 
   // exit main process gracefully
-  terminal.processExit(0);
+  exit(0);
 }
 
 function exitForcefully()
 {
   // ensure the to enable input and cursor
-  terminal.grabInput(false);
-  terminal.hideCursor(false);
+  showCursor();
 
-  // add 2 new lines
-  terminal('\n\n');
+  console.log('');
 
   // force exit the process
-  process.exit(1);
+  exit(1);
 }
 
-// grab the input
-terminal.grabInput({ mouse: 'button' }) ;
-
 // listen for interruptions
-terminal.on('key', (name) =>
+process.on('SIGINT', () =>
 {
-  if (name === 'CTRL_C')
-  {
-    // print a notice about the manual termination
-    terminal.yellow('\nProcess was interrupted.');
+  // print a notice about the manual termination
+  console.log(c.yellow('\n\nProcess was interrupted.'));
 
-    // exit the main process gracefully
-    // after killing  all running children
-    kill().then(exitGracefully).catch(exitGracefully);
-  }
+  // kill all running children
+  kill();
+
+  // exit the main process forcefully
+  exitGracefully();
 });
-
-// add new line
-terminal('\n');
 
 // start the main process
 (async() =>
 {
   try
   {
+    // add new line
+    console.log('');
+
+    // setup draftlog
+    draftlog.into(console);
+
     await main();
 
     // kill all running children
-    await kill();
+    kill();
 
+    // exit the main process gracefully
     exitGracefully();
   }
   catch (e)
   {
     // print the error
-    terminal.red(`\n${e.message || e}`);
+    console.log(c.red(`\n${e.message || e}`));
 
     // kill all running children
-    await kill();
+    kill();
 
     exitForcefully();
   }
