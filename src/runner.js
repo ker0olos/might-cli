@@ -4,7 +4,7 @@ import puppeteer from 'puppeteer';
 
 import { keyDefinitions } from 'puppeteer/lib/cjs/puppeteer/common/USKeyboardLayout.js';
 
-import Bluebird from 'bluebird';
+import limit from 'p-limit';
 
 import pixelmatch from 'pixelmatch';
 
@@ -343,12 +343,12 @@ export async function runner(options, callback)
     }
   };
   
+  const parallel = limit(options.parallel);
+
   // run tests in parallel
-  // this is only time throughout might that Bluebird is used
-  // TODO we should replace this with smaller implementation
-  await Bluebird
-    .resolve(map)
-    .map(runTest, { concurrency: options.parallel });
+  await Promise.all(
+    map.map(((t, id) => parallel(() => runTest(t, id))))
+  );
 
   // close puppeteer
   await browser.close();
