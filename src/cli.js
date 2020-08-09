@@ -328,6 +328,7 @@ async function run(map, target, update, parallel, coverage, config)
       {
         const passed = (value.passed) ? `${c.bold.green(`${value.passed} passed`)}, ` : '';
         const updated = (value.updated) ? `${c.bold.yellow(`${value.updated} updated`)}, ` : '';
+        const failed = (value.failed) ? `${c.bold.red(`${value.failed} failed`)}, ` : '';
         const skipped = (value.skipped) ? `${c.bold.magenta(`${value.skipped} skipped`)}, ` : '';
 
         const total = `${value.total} total`;
@@ -337,9 +338,9 @@ async function run(map, target, update, parallel, coverage, config)
         if (updateAll)
           updateNotice = c.bold(' (all targeted tests were updated)');
         else if (updateFalied)
-          updateNotice = c.bold(` (any ${c.red('FAILED')} tests were updated)`);
+          updateNotice = c.bold(` (all ${c.red('FAILED')} tests were updated)`);
 
-        console.log(`\nSummary${updateNotice}: ${passed}${updated}${skipped}${total}.`);
+        console.log(`\nSummary${updateNotice}: ${passed}${updated}${failed}${skipped}${total}.`);
       }
     }
 
@@ -391,7 +392,7 @@ async function run(map, target, update, parallel, coverage, config)
         let reason = '(NEW)';
 
         if (updateFalied && value.force)
-          reason = c.red('(F)');
+          reason = c.red('(FAILED)');
         else if (value.force)
           reason = '(FORCED)';
 

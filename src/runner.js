@@ -298,9 +298,15 @@ export async function runner(options, callback)
         if (mismatch > 0)
         {
           if (options.update)
+          {
+            failed = failed + 1;
+
             await update(true);
+          }
           else
+          {
             throw new MismatchError(`Error: Mismatched ${mismatch} pixels`, PNG.sync.write(diff));
+          }
         }
         else
         {
@@ -343,8 +349,6 @@ export async function runner(options, callback)
       });
 
       callback('error', e);
-
-      failed = failed + 1;
     }
   };
   
