@@ -257,7 +257,7 @@ export async function runner(options, callback)
 
       // new first-run test or a forced update command
 
-      const update = async() =>
+      const update = async(force) =>
       {
         // save screenshot to disk
         await page.screenshot({
@@ -267,15 +267,20 @@ export async function runner(options, callback)
         callback('progress', {
           id,
           title,
+          force: force,
           state: 'updated'
         });
 
         updated = updated + 1;
       };
 
-      if (!screenshotExists || (options.target && options.update))
+      if (!screenshotExists)
       {
         await update();
+      }
+      else if (options.target && options.update)
+      {
+        await update(true);
       }
       else
       {
@@ -293,7 +298,7 @@ export async function runner(options, callback)
         if (mismatch > 0)
         {
           if (options.update)
-            await update();
+            await update(true);
           else
             throw new MismatchError(`Error: Mismatched ${mismatch} pixels`, PNG.sync.write(diff));
         }

@@ -154,7 +154,7 @@ async function main()
     console.log('');
 
     console.log(c.bold.cyan('--parallel (-p)'), 'Control how many tests should be allowed to run at the same time.');
-    // console.log(c.bold.cyan('--collect-coverage (-c)'), ' Outputs a coverage report at the end.');
+    // console.log(c.bold.cyan('--coverage (-c)'), 'Outputs a coverage report at the end.');
   }
   // opens might-ui (even if not installed because npx is cool)
   else if (process.argv.includes('--map') || process.argv.includes('-m'))
@@ -226,7 +226,7 @@ async function main()
 
     const update = process.argv.includes('--update') || process.argv.includes('-u');
 
-    const coverage = process.argv.includes('--collect-coverage') || process.argv.includes('-c');
+    const coverage = process.argv.includes('--coverage') || process.argv.includes('-c');
 
     await run(map, target, update, parallel, coverage, config);
   }
@@ -251,6 +251,9 @@ function start(command)
 */
 async function run(map, target, update, parallel, coverage, config)
 {
+  const updateFalied = update && !target;
+  const updateAll = update && target;
+
   // hide cursor
   hideCursor();
 
@@ -329,20 +332,14 @@ async function run(map, target, update, parallel, coverage, config)
 
         const total = `${value.total} total`;
 
-        if (update)
-        {
-          if (target)
-            console.log((`\nUpdate mode was on: all targeted tests were ${c.bold.yellow('UPDATED')}.`));
-          else
-            console.log((`\nUpdate mode was on: any ${c.red.bold('FAILED')} tests were ${c.bold.yellow('UPDATED')}.`));
-        }
-        else
-        {
-          // log new line
-          console.log();
-        }
+        let updateNotice = '';
 
-        console.log(`Summary: ${passed}${updated}${skipped}${total}.`);
+        if (updateAll)
+          updateNotice = c.bold(' (all targeted tests were updated)');
+        else if (updateFalied)
+          updateNotice = c.bold(` (any ${c.red('FAILED')} tests were updated)`);
+
+        console.log(`\nSummary${updateNotice}: ${passed}${updated}${skipped}${total}.`);
       }
     }
 
@@ -391,7 +388,14 @@ async function run(map, target, update, parallel, coverage, config)
       {
         const time = roundTime(Date.now(),  running[value.id].timestamp);
 
-        running[value.id].update(c.bold.yellow(`UPDATED (${time}s)`), value.title);
+        let reason = '(NEW)';
+
+        if (updateFalied && value.force)
+          reason = c.red('(F)');
+        else if (value.force)
+          reason = '(FORCED)';
+
+        running[value.id].update(c.bold.yellow(`UPDATED ${reason} (${time}s)`), value.title);
       }
       else if (value.state === 'failed')
       {
