@@ -61,7 +61,7 @@ run `npx might -h` to see additional information about how to run specific tests
 while the feature itself is new and probably have few issues, 
 we use the coverage data returned by chrome, which have issues with things like JSX, so keep in mind that the coverage reports are never 100% accurate.
 
-the reports themselves we be outputted to `__coverage__`, and can be used with tools like codecov.
+the reports themselves will be outputted to `__coverage__`, and can be used with tools like codecov.
 
 ---
 
