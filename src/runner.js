@@ -12,11 +12,11 @@ import md5 from 'md5';
 
 import { join } from 'path';
 
-import { pathExists, ensureDir, readFile/*, emptyDir*/ } from 'fs-extra';
+import { pathExists, ensureDir, readFile, emptyDir } from 'fs-extra';
 
 import { stepsToString } from 'might-core';
 
-// import { coverage } from './coverage.js';
+import { coverage } from './coverage.js';
 
 /**
 * @typedef { Test[] } Map
@@ -44,6 +44,7 @@ import { stepsToString } from 'might-core';
 * @property { string } screenshotsDir
 * @property { string } coverageDir
 * @property { number } stepTimeout
+* @property { string[] } coverageIgnore
 */
 
 class MismatchError extends Error
@@ -121,6 +122,8 @@ export async function runner(options, callback)
 
   options.parallel = (typeof options.parallel !== 'number') ? 3 : (options.parallel || 3);
 
+  options.coverageIgnore = (!Array.isArray(options.coverageIgnore)) ? [] : options.coverageIgnore;
+
   let map = options.map;
 
   if (!map)
@@ -138,7 +141,7 @@ export async function runner(options, callback)
   let updated = 0;
   let failed = 0;
 
-  // const coverageData = [];
+  const coverageCollection = [];
 
   // skipping broken tests
   // and filtering targets
@@ -219,10 +222,10 @@ export async function runner(options, callback)
       // start collecting coverage
       if (options.coverage)
       {
-        // await Promise.all([
-        //   page.coverage.startJSCoverage(),
-        //   page.coverage.startCSSCoverage()
-        // ]);
+        await Promise.all([
+          page.coverage.startJSCoverage(),
+          page.coverage.startCSSCoverage()
+        ]);
       }
 
       // an attempt to make tests more consistent
@@ -323,16 +326,16 @@ export async function runner(options, callback)
       // stop collecting coverage
       if (options.coverage)
       {
-        // const [ jsCoverage, cssCoverage ] = await Promise.all([
-        //   page.coverage.stopJSCoverage(),
-        //   page.coverage.stopCSSCoverage()
-        // ]);
+        const [ jsCoverage, cssCoverage ] = await Promise.all([
+          page.coverage.stopJSCoverage(),
+          page.coverage.stopCSSCoverage()
+        ]);
 
-        // coverageData.push({
-        //   url: page.url(),
-        //   js: jsCoverage,
-        //   css: cssCoverage
-        // });
+        coverageCollection.push({
+          url: page.url(),
+          js: jsCoverage,
+          css: cssCoverage
+        });
       }
 
       // close the page
@@ -365,20 +368,22 @@ export async function runner(options, callback)
   // process the coverage of all the tests
   if (options.coverage)
   {
-    // console.log('generating coverage report...');
+    callback('coverage', {
+      state: 'running'
+    });
 
-    // const sourceDir = join(options.coverageDir, '__tmp__');
+    const sourceDir = join(options.coverageDir, '__tmp__');
 
     // empties and ensures that the coverage directories exists
-    // await emptyDir(options.coverageDir);
+    await emptyDir(options.coverageDir);
   
-    // process and transform all the data
-    // then uses istanbul to write a report to disk
-    // TODO handle the entire array
-    
-    // console.log('actual length of coverage data is', coverageData.length, 'But we only are processing', 1);
+    // handle the coverage data returned by puppeteer
+    const report = await coverage(coverageCollection, options.coverageDir, sourceDir, options.coverageIgnore);
 
-    // await coverage(coverageData[0], '/src/**', options.coverageDir, sourceDir);
+    callback('coverage', {
+      state: 'done',
+      report
+    });
   }
 
   callback('done', {

@@ -22,6 +22,7 @@ import { runner } from './runner.js';
 * @property { { width: number, height: number } } viewport
 * @property { number } parallelTests
 * @property { number } defaultTimeout
+* @property { string[] } coverageIgnore
 */
 
 /** the start command process
@@ -87,7 +88,7 @@ async function readConfig()
     if (!url.value)
       return;
 
-    console.log('');
+    console.log();
 
     config = {
       startCommand: startCommand.value || null,
@@ -97,7 +98,14 @@ async function readConfig()
         height: null
       },
       parallelTests: null,
-      defaultTimeout: null
+      defaultTimeout: null,
+      coverageIgnore: [
+        // popular directories people hate
+        '/node_modules/**',
+        '/webpack/**',
+        '/\'(\'webpack\')\'/**',
+        '/\'(\'webpack\')\'-dev-server/**'
+      ]
     };
 
     await writeJSON(resolve('might.config.json'), config, { spaces: 2 });
@@ -128,7 +136,7 @@ async function readMap(dialog)
     console.log(c.bold.yellow('[WARN: Map is missing or corrupted]'));
     console.log(c.bold('Make sure you have a file called "might.map.json" in the root of the project\'s directory.'));
 
-    console.log('');
+    console.log();
   }
   finally
   {
@@ -143,18 +151,18 @@ async function main()
   // open help menu
   if (process.argv.includes('--help') || process.argv.includes('-h'))
   {
-    console.log(c.bold.cyan('--help (-h)'), '    Opens this help menu.');
-    console.log(c.bold.cyan('--map (-m)'), '     Opens Might UI (even if not installed).');
+    console.log(c.bold.cyan('--help, -h'), '       Opens this help menu.');
+    console.log(c.bold.cyan('--map, -m'), '        Opens Might UI (even if not installed).');
 
-    console.log('');
+    console.log();
 
-    console.log(c.bold.cyan('--target (-t)'), '  List the tests that should run (use their titles and separate them with a comma).');
-    console.log(c.bold.cyan('--update (-u)'), '  Updates the screenshots of targeted tests (if no tests were targeted it updates any failed tests).');
+    console.log(c.bold.cyan('--target, -t'), '     [string]   List the tests that should run (use their titles and separate them with a comma).');
+    console.log(c.bold.cyan('--update, -u'), '     [boolean]  Updates the screenshots of targeted tests (if no tests were targeted it updates any failed tests).');
 
-    console.log('');
+    console.log();
 
-    console.log(c.bold.cyan('--parallel (-p)'), 'Control how many tests should be allowed to run at the same time.');
-    // console.log(c.bold.cyan('--coverage (-c)'), 'Outputs a coverage report at the end.');
+    console.log(c.bold.cyan('--parallel, -p'), '   [number]   Control how many tests should be allowed to run at the same time.');
+    console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end (experimental).');
   }
   // opens might-ui (even if not installed because npx is cool)
   else if (process.argv.includes('--map') || process.argv.includes('-m'))
@@ -251,15 +259,16 @@ function start(command)
 */
 async function run(map, target, update, parallel, coverage, config)
 {
-  const updateFalied = update && !target;
+  const updateFailed = update && !target;
   const updateAll = update && target;
 
   // hide cursor
   hideCursor();
 
-  let interval;
-
   // let length = 0;
+  let draft;
+  
+  const animation = [ '|', '/', '-', '\\' ];
 
   const running = {};
 
@@ -276,7 +285,8 @@ async function run(map, target, update, parallel, coverage, config)
     coverage,
     screenshotsDir: resolve('__might__'),
     coverageDir: resolve('__coverage__'),
-    stepTimeout: config.defaultTimeout
+    stepTimeout: config.defaultTimeout,
+    coverageIgnore: config.coverageIgnore
   },
   (type, value) =>
   {
@@ -303,9 +313,6 @@ async function run(map, target, update, parallel, coverage, config)
       {
         error = new Error(value.message || value);
       }
-
-      if (interval)
-        clearInterval(interval);
 
       throw error;
     }
@@ -336,11 +343,23 @@ async function run(map, target, update, parallel, coverage, config)
         let updateNotice = '';
 
         if (updateAll)
-          updateNotice = c.bold(' (all targeted tests were updated)');
-        else if (updateFalied)
-          updateNotice = c.bold(` (all ${c.red('FAILED')} tests were updated)`);
+          updateNotice = ' (All TARGETED TESTS WERE UPDATED):';
+        else if (updateFailed)
+          updateNotice = ` (ALL ${c.bold.red('FAILED')} TESTS WERE UPDATED):`;
 
-        console.log(`\nSummary${updateNotice}: ${passed}${updated}${failed}${skipped}${total}.`);
+        // draft is used to show info before summary is printed
+        // when summary is printed it show replace whatever what shown in that spot
+        let log = draft;
+
+        // use a normal log if no info was being shown
+        if (!log)
+        {
+          console.log();
+
+          log = console.log;
+        }
+
+        log(`Summary:${updateNotice} ${passed}${updated}${failed}${skipped}${total}.`);
       }
     }
 
@@ -349,14 +368,12 @@ async function run(map, target, update, parallel, coverage, config)
     {
       if (value.state === 'running')
       {
-        const animation = [ '|', '/', '-', '\\' ];
-
-        const update = console.draft(c.bold.blueBright('RUNNING (|)'), value.title);
+        const draft = console.draft(c.bold.blueBright('RUNNING (|)'), value.title);
 
         running[value.id] = {
+          draft,
           frame: 1,
-          timestamp: Date.now(),
-          update: update
+          timestamp: Date.now()
         };
 
         running[value.id].interval = setInterval(() =>
@@ -373,10 +390,10 @@ async function run(map, target, update, parallel, coverage, config)
 
           // show that a test is taking too much time (over 15 seconds)
           if (time >= 15)
-            update(c.bold.blueBright('RUNNING'), c.bold.red(`(${time}s)`), value.title);
+            draft(c.bold.blueBright('RUNNING'), c.bold.red(`(${time}s)`), value.title);
           else
             // eslint-disable-next-line security/detect-object-injection
-            update(c.bold.blueBright(`RUNNING (${animation[frame]})`), value.title);
+            draft(c.bold.blueBright(`RUNNING (${animation[frame]})`), value.title);
         }, 500);
       }
       else
@@ -391,24 +408,47 @@ async function run(map, target, update, parallel, coverage, config)
 
         let reason = '(NEW)';
 
-        if (updateFalied && value.force)
+        if (updateFailed && value.force)
           reason = c.red('(FAILED)');
         else if (value.force)
           reason = '(FORCED)';
 
-        running[value.id].update(c.bold.yellow(`UPDATED ${reason} (${time}s)`), value.title);
+        running[value.id].draft(c.bold.yellow(`UPDATED ${reason} (${time}s)`), value.title);
       }
       else if (value.state === 'failed')
       {
         const time = roundTime(Date.now(),  running[value.id].timestamp);
 
-        running[value.id].update(c.bold.red(`FAILED (${time}s)`), value.title);
+        running[value.id].draft(c.bold.red(`FAILED (${time}s)`), value.title);
       }
       else if (value.state === 'passed')
       {
         const time = roundTime(Date.now(),  running[value.id].timestamp);
 
-        running[value.id].update(c.bold.green(`PASSED (${time}s)`), value.title);
+        running[value.id].draft(c.bold.green(`PASSED (${time}s)`), value.title);
+      }
+    }
+
+    if (type === 'coverage')
+    {
+      if (value.state === 'running')
+      {
+        console.log();
+
+        draft = console.draft(c.bold.blueBright('Generating Coverage Report...'));
+      }
+
+      if (value.state === 'done' && value.report !== undefined)
+      {
+        let color = c.red;
+
+        if (value.report >= 70)
+          color = c.yellow;
+        
+        if (value.report >= 90)
+          color = c.green;
+
+        console.log('\nTotal Coverage is', color.bold(`${value.report}%`));
       }
     }
   });
@@ -440,7 +480,7 @@ function exitGracefully()
   // ensure the to enable input and cursor
   showCursor();
 
-  console.log('');
+  console.log();
 
   // exit main process gracefully
   exit(0);
@@ -451,7 +491,7 @@ function exitForcefully()
   // ensure the to enable input and cursor
   showCursor();
 
-  console.log('');
+  console.log();
 
   // force exit the process
   exit(1);
@@ -476,7 +516,7 @@ process.on('SIGINT', () =>
   try
   {
     // add new line
-    console.log('');
+    console.log();
 
     // setup draftlog
     draftlog.into(console);
@@ -492,7 +532,9 @@ process.on('SIGINT', () =>
   catch (e)
   {
     // print the error
+
     console.log(c.red(`\n${e.message || e}`));
+    // console.log(c.red(`\n${e.stack}`));
 
     // kill all running children
     kill();

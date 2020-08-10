@@ -3,14 +3,13 @@ Performance Issues and Bugs:
     puppeteer does not support touch events at least none that I know of.
 
 Documentation:
-  ☐ coverage reports
 
 Map:
 
 Runner:
-  ☐ coverage reports
-    - reinstall dependencies
-      glob-to-regexp istanbul-lib-coverage istanbul-lib-report istanbul-reports ./v8-to-istanbul
+
+Coverage:
+  ☐ improve statement maps
 
 CLI:
   ☐ output unused screenshots to the terminal and add a option to clean them @low

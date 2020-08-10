@@ -53,11 +53,19 @@ When the test is performed for the second time, we again take a screenshot of it
 
 [![](./screenshots/4.png)](https://github.com/ItsKerolos/might-cli/raw/master/screenshots/4.png)
 
-#### run `npx might -h` to see additional information about how to run specific tests and skip the rest, how to update failed tests, and how to control the amount of parallel tests.
+---
+
+run `npx might -h` to see additional information about how to run specific tests and skip the rest, how to update failed tests, how to control the amount of parallel tests, and how to get a coverage report.
+
+#### Notes about code coverage:
+while the feature itself is new and probably have few issues, 
+we use the coverage data returned by chrome, which have issues with things like JSX, so keep in mind that the coverage reports are never 100% accurate.
+
+the reports themselves we be outputted to `__coverage__`, and can be used with tools like codecov.
 
 ---
 
-## What can it do?
+## What can I test?
 
 - Waiting
 - Changing the Viewport
@@ -69,6 +77,7 @@ When the test is performed for the second time, we again take a screenshot of it
 - Dragging Elements
 - Swiping the Screen
 - Typing
+
 
 Want a feature that we don't have yet? open a [feature request](https://github.com/ItsKerolos/might-cli/issues/new?template=feature_request.md).
 
