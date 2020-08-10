@@ -1,6 +1,6 @@
 {
   "name": "might-cli",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
