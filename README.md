@@ -60,7 +60,7 @@ When the test is performed for a second time, a new screenshot is compared with 
 run `npx might -h` to see additional information about how to run specific tests and skip the rest, how to update failed tests, how to control the amount of parallel tests, and how to get a coverage report.
 
 ##### Notes about code coverage:
-We use the coverage data returned by Puppeteer, which only returns covered lines but doesn't return uncovered and ignored lines, we have some default coverage-related configs in `might.config.json` that automatically ignore certain lines.
+We use the coverage data returned by Puppeteer, which only returns covered lines but doesn't return uncovered and ignored lines, we have some default coverage-related configs in `might.config.json` that automatically ignore certain lines, but there's always more cases like `}));` that won't be ignored by default, if you get any of those just add them to your config.
 
 the reports are outputted to `__coverage__`, and can be used with tools like codecov.
 

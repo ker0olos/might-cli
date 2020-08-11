@@ -108,8 +108,8 @@ async function readConfig()
         '/\'(\'webpack\')\'-dev-server/**'
       ],
       coverageIgnoreLines: {
-        equal: [ '', '{', '}', '})', '});', 'else', '*/' ],
-        startsWith: [ '//', '/**' ],
+        equal: [ '', '{', '}', '};', '})', '});', ']', '];', 'else', '*/' ],
+        startsWith: [ '//', '*', '/**' ],
         endsWith: [ ],
         startsEndsWith: [ [ '</', '>' ], [ '</', '>;' ] ]
       }
