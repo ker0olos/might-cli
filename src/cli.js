@@ -22,7 +22,8 @@ import { runner } from './runner.js';
 * @property { { width: number, height: number } } viewport
 * @property { number } parallelTests
 * @property { number } defaultTimeout
-* @property { string[] } coverageIgnore
+* @property { string[] } coverageExclude
+* @property { import('./coverage').CoverageIgnore } coverageIgnoreLines
 */
 
 /** the start command process
@@ -99,13 +100,19 @@ async function readConfig()
       },
       parallelTests: null,
       defaultTimeout: null,
-      coverageIgnore: [
+      coverageExclude: [
         // popular directories people hate
         '/node_modules/**',
         '/webpack/**',
         '/\'(\'webpack\')\'/**',
         '/\'(\'webpack\')\'-dev-server/**'
-      ]
+      ],
+      coverageIgnoreLines: {
+        equal: [ '', '{', '}', '})', '});', 'else', '*/' ],
+        startsWith: [ '//', '/**' ],
+        endsWith: [ ],
+        startsEndsWith: [ [ '</', '>' ], [ '</', '>;' ] ]
+      }
     };
 
     await writeJSON(resolve('might.config.json'), config, { spaces: 2 });
@@ -286,7 +293,8 @@ async function run(map, target, update, parallel, coverage, config)
     screenshotsDir: resolve('__might__'),
     coverageDir: resolve('__coverage__'),
     stepTimeout: config.defaultTimeout,
-    coverageIgnore: config.coverageIgnore
+    coverageExclude: config.coverageExclude,
+    coverageIgnoreLines: config.coverageIgnoreLines
   },
   (type, value) =>
   {

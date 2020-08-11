@@ -22,18 +22,27 @@ import { outputFile, remove } from 'fs-extra';
 */
 
 /**
+* @typedef { Object } CoverageIgnore
+* @property { string[] } equal
+* @property { string[] } startsWith
+* @property { string[] } endsWith
+* @property { string[][] } startsEndsWith
+*/
+
+/**
 * @param { { url: string, js: CoverageEntry[], css: CoverageEntry[] }[] } collection
 * @param { string } mainDir
 * @param { string } sourceDir
-* @param { string[] } ignore
+* @param { string[] } exclude
+* @param { CoverageIgnore } ignore
 */
-export async function coverage(collection, mainDir, sourceDir, ignore)
+export async function coverage(collection, mainDir, sourceDir, exclude, ignore)
 {
   const mainMap = createCoverageMap();
 
   for (const item of collection)
   {
-    const data = await getCoverageMap(item, sourceDir, ignore);
+    const data = await getCoverageMap(item, sourceDir, exclude, ignore);
    
     // merges all tests coverage together in one report
     mainMap.merge(data);
@@ -45,9 +54,16 @@ export async function coverage(collection, mainDir, sourceDir, ignore)
     coverageMap: mainMap
   });
 
-  reports.create('lcov').execute(context);
-  reports.create('clover').execute(context);
-  reports.create('json').execute(context);
+  try
+  {
+    reports.create('lcov').execute(context);
+    reports.create('clover').execute(context);
+    reports.create('json').execute(context);
+  }
+  catch
+  {
+    // don't freakout
+  }
 
   // clean the source directory
   await remove(sourceDir);
@@ -77,13 +93,14 @@ export async function coverage(collection, mainDir, sourceDir, ignore)
 /**
 * @param { { url: string, js: CoverageEntry[], css: CoverageEntry[] } } data
 * @param { string } sourceDir
-* @param { string[] } ignore
+* @param { string[] } exclude
+* @param { CoverageIgnore } ignore
 */
-async function getCoverageMap(data, sourceDir, ignore)
+async function getCoverageMap(data, sourceDir, exclude, ignore)
 {
   const map = createCoverageMap();
 
-  const coverageData = await fromPuppeteer([ ...data.js, ...data.css ], data.url, ignore, sourceDir);
+  const coverageData = await fromPuppeteer([ ...data.js, ...data.css ], sourceDir, exclude, ignore);
 
   for (const fileCoverage in coverageData)
   {
@@ -96,10 +113,11 @@ async function getCoverageMap(data, sourceDir, ignore)
 /**
 * @param { CoverageEntry[] } coverageEntries
 * @param { string } pageUrl
-* @param { import('ignore').Ignore } ignore
 * @param { string } sourceDir
+* @param { string[] } exclude
+* @param { CoverageIgnore } ignore
 */
-async function fromPuppeteer(coverageEntries, pageUrl, ignore, sourceDir)
+async function fromPuppeteer(coverageEntries, sourceDir, exclude, ignore)
 {
   /**
   * @type { Object<string, import('istanbul-lib-coverage').FileCoverageData> }
@@ -114,8 +132,8 @@ async function fromPuppeteer(coverageEntries, pageUrl, ignore, sourceDir)
     // its a full url, we only want the path name
     const entryPath = new URL(entry.url).pathname;
 
-    // match path with ignore globs
-    if (isMatch(entryPath.replace('\\', ''), ignore) || entryPath.length <= 1)
+    // match path with excluded globs
+    if (isMatch(entryPath.replace('\\', ''), exclude) || entryPath.length <= 1)
       continue;
 
     // create a filename by removing the page url part
@@ -174,11 +192,11 @@ async function fromPuppeteer(coverageEntries, pageUrl, ignore, sourceDir)
           if (path.indexOf('://') >= 0)
             relative = path.split('://')[1];
 
-          // match path with ignore globs
+          // match path with excluded globs
           // P.S. some tools like webpack write filename
           // that contain backslashes and those break nanomatch
           // so we remove them in the test string
-          if (!isMatch(relative.replace('\\', ''), ignore))
+          if (!isMatch(relative.replace('\\', ''), exclude))
           {
             // transform to a full path
             const filename = join(sourceDir, relative);
@@ -189,7 +207,7 @@ async function fromPuppeteer(coverageEntries, pageUrl, ignore, sourceDir)
             // simply to create a statementMap for each file
             // the fileCoverage returned is later used to write
             // the actual coverage data
-            const fileCoverage = fromFile(sourceDir, relative, text, []);
+            const fileCoverage = fromFile(sourceDir, relative, text, [], ignore);
 
             convertedData[path] = fileCoverage;
 
@@ -223,9 +241,12 @@ async function fromPuppeteer(coverageEntries, pageUrl, ignore, sourceDir)
       {
         const generatedCovered = rangeToLines(lines, entry.text, range);
 
+        const startCol = generatedCovered.startLine.endCol - generatedCovered.startLine.startCol;
+        const endCol = generatedCovered.endLine.endCol - generatedCovered.endLine.startCol;
+
         // loop though the generated covered lines
         // marking each time an original line is found
-        for (let i = generatedCovered.startLine.line; i < generatedCovered.endLine.line; i++)
+        for (let i = generatedCovered.startLine.line; i <= generatedCovered.endLine.line; i++)
         {
           const originalCovered = mappings[i];
 
@@ -233,13 +254,23 @@ async function fromPuppeteer(coverageEntries, pageUrl, ignore, sourceDir)
           {
             const path = mapping?.source;
 
+            // make sure we don't go earlier than start line column
+            if (i === generatedCovered.startLine.line && mapping.generatedColumn < startCol)
+              return;
+
+            // make sure we don't go further than end line column
+            if (i === generatedCovered.endLine.line && mapping.generatedColumn > endCol)
+              return;
+
             // this is only true if
-            // the file is not ignored
-            if (convertedData[path])
+            // the file is not excluded
+            if (!convertedData[path])
+              return;
+            
+            // if that line number is part of the statement map
+            if (convertedData[path].statementMap[mapping.originalLine])
             {
-              // if that line number is part of the statement map
-              if (convertedData[path].statementMap[mapping.originalLine])
-                convertedData[path].s[mapping.originalLine] = 1;
+              convertedData[path].s[mapping.originalLine] = 1;
             }
           });
         }
@@ -253,7 +284,8 @@ async function fromPuppeteer(coverageEntries, pageUrl, ignore, sourceDir)
         sourceDir,
         entryPath,
         entry.text,
-        entry.ranges);
+        entry.ranges,
+        ignore);
 
       convertedData[entry.url] = fileCoverage;
     }
@@ -267,8 +299,9 @@ async function fromPuppeteer(coverageEntries, pageUrl, ignore, sourceDir)
 * @param { string } path
 * @param { string } text
 * @param { { start: number, end: number }[] } ranges
+* @param { CoverageIgnore } ignore
 */
-function fromFile(sourceDir, path, text, ranges)
+function fromFile(sourceDir, path, text, ranges, ignore)
 {
   /**
   * @type { Object<string, import('istanbul-lib-coverage').Range> }
@@ -296,13 +329,32 @@ function fromFile(sourceDir, path, text, ranges)
 
   for (let i = 0; i < lines.length; i++)
   {
+    const text = lines[i].text.trim();
+
     const number = lines[i].line;
 
     const startCol = 0;
     const endCol = lines[i].endCol - lines[i].startCol;
 
-    // ignores empty lines
-    if (endCol > 0)
+    let ignoreLine = false;
+
+    // this is used as a way to mimic
+    // the way chrome dev-tools ignore lines
+    if (ignore)
+    {
+      const equal = ignore.equal.some(search => search === text);
+
+      const startsWith = ignore.startsWith.some(search => text.startsWith(search));
+      const endsWith = ignore.endsWith.some(search => text.endsWith(search));
+
+      const startsEndsWith = ignore.startsEndsWith.some(searches => text.startsWith(searches[0]) && text.endsWith(searches[1]));
+
+      if (equal || startsWith || endsWith || startsEndsWith)
+        ignoreLine = true;
+    }
+
+    // if line is not ignored
+    if (!ignoreLine)
     {
       statementMap[number] = {
         start: {
@@ -323,11 +375,13 @@ function fromFile(sourceDir, path, text, ranges)
   {
     const covered = rangeToLines(lines, text, range);
 
-    for (let number = covered.startLine.line; number <= covered.endLine.line; number++)
+    for (let i = covered.startLine.line; i <= covered.endLine.line; i++)
     {
       // if that line number is part of the statement map
-      if (statementMap[number])
-        s[number] = 1;
+      if (statementMap[i])
+      {
+        s[i] = 1;
+      }
     }
 
     // const branch = {
@@ -367,7 +421,7 @@ function fromFile(sourceDir, path, text, ranges)
 
 /**
 * @param { string } text
-* @returns { { line: number, startCol: number, endCol: number }[] }
+* @returns { { text: string, line: number, startCol: number, endCol: number }[] }
 */
 function buildLines(text)
 {
@@ -381,30 +435,25 @@ function buildLines(text)
 
   const lines = [];
 
-  for (const [ i, lineStr ] of text.split(lineRegex).entries())
+  for (const [ i, lineText ] of text.split(lineRegex).entries())
   {
-    const lineStrTrimmed = lineStr.trim();
-
     const line = i + 1;
     const startCol = position;
 
-    const matchedNewLineChar = lineStr.match(/\r?\n$/u);
+    const matchedNewLineChar = lineText.match(/\r?\n$/u);
 
     const newLineLength = matchedNewLineChar ? matchedNewLineChar[0].length : 0;
 
-    let endCol = startCol + lineStr.length - newLineLength;
-
-    // ignore lines of full of just whitespace
-    if (!lineStrTrimmed.length)
-      endCol = startCol;
+    const endCol = startCol + lineText.length - newLineLength;
 
     lines.push({
+      text: lineText,
       line,
       startCol,
       endCol
     });
 
-    position += lineStr.length;
+    position += lineText.length;
   }
 
   return lines;

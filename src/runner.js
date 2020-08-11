@@ -44,7 +44,8 @@ import { coverage } from './coverage.js';
 * @property { string } screenshotsDir
 * @property { string } coverageDir
 * @property { number } stepTimeout
-* @property { string[] } coverageIgnore
+* @property { string[] } coverageExclude
+* @property { import('./coverage').CoverageIgnore } coverageIgnoreLines
 */
 
 class MismatchError extends Error
@@ -122,7 +123,15 @@ export async function runner(options, callback)
 
   options.parallel = (typeof options.parallel !== 'number') ? 3 : (options.parallel || 3);
 
-  options.coverageIgnore = (!Array.isArray(options.coverageIgnore)) ? [] : options.coverageIgnore;
+  options.coverageExclude = (!Array.isArray(options.coverageExclude)) ? [] : options.coverageExclude;
+
+  options.coverageIgnoreLines = (typeof options.coverageIgnoreLines !== 'object') ? {} : options.coverageIgnoreLines;
+
+  options.coverageIgnoreLines.equal = (!Array.isArray(options.coverageIgnoreLines.equal)) ? [] : options.coverageIgnoreLines.equal;
+  options.coverageIgnoreLines.startsWith = (!Array.isArray(options.coverageIgnoreLines.startsWith)) ? [] : options.coverageIgnoreLines.startsWith;
+  options.coverageIgnoreLines.endsWith = (!Array.isArray(options.coverageIgnoreLines.endsWith)) ? [] : options.coverageIgnoreLines.endsWith;
+  
+  options.coverageIgnoreLines.startsEndsWith = (!Array.isArray(options.coverageIgnoreLines.startsEndsWith)) ? [] : options.coverageIgnoreLines.startsEndsWith;
 
   let map = options.map;
 
@@ -378,7 +387,7 @@ export async function runner(options, callback)
     await emptyDir(options.coverageDir);
   
     // handle the coverage data returned by puppeteer
-    const report = await coverage(coverageCollection, options.coverageDir, sourceDir, options.coverageIgnore);
+    const report = await coverage(coverageCollection, options.coverageDir, sourceDir, options.coverageExclude, options.coverageIgnoreLines);
 
     callback('coverage', {
       state: 'done',
