@@ -5,6 +5,8 @@ import prompts from 'prompts';
 
 import draftlog from 'draftlog';
 
+import isCI from 'is-ci';
+
 import { join } from 'path';
 
 import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
@@ -31,6 +33,8 @@ import { runner } from './runner.js';
 */
 let running;
 
+const quiet = isCI;
+
 function resolve(...args)
 {
   return join(process.cwd(), ...args);
@@ -56,6 +60,10 @@ async function readConfig()
   }
   catch
   {
+
+    if (quiet)
+      return;
+      
     console.log(c.bold.yellow('? Config is missing or corrupted.'));
 
     const newConfig = await prompts({
@@ -108,10 +116,18 @@ async function readConfig()
         '/\'(\'webpack\')\'-dev-server/**'
       ],
       coverageIgnoreLines: {
-        equal: [ '', '{', '}', '};', '})', '});', ']', '];', 'else', '*/' ],
+        equal: [
+          '', '{', '}',
+          '};', '})', '});',
+          ']', '];', 'else',
+          '*/'
+        ],
         startsWith: [ '//', '*', '/**' ],
         endsWith: [ ],
-        startsEndsWith: [ [ '</', '>' ], [ '</', '>;' ] ]
+        startsEndsWith: [
+          [ '</', '>' ],
+          [ '</', '>;' ]
+        ]
       }
     };
 
@@ -140,7 +156,7 @@ async function readMap(dialog)
     if (!dialog)
       return;
 
-    console.log(c.bold.yellow('[WARN: Map is missing or corrupted]'));
+    console.log(c.bold.yellow('Map is missing or corrupted.'));
     console.log(c.bold('Make sure you have a file called "might.map.json" in the root of the project\'s directory.'));
 
     console.log();
@@ -187,6 +203,9 @@ async function main()
   else
   {
     let target, parallel;
+
+    if (quiet)
+      console.log(c.magenta('Might discovered it\'s running inside a CI environment, it will be quieter.\n'));
 
     // read the config file
     const config = await readConfig();
@@ -376,7 +395,7 @@ async function run(map, target, update, parallel, coverage, config)
     {
       if (value.state === 'running')
       {
-        const draft = console.draft(c.bold.blueBright('RUNNING (|)'), value.title);
+        const draft = console.draft(c.bold.blueBright((quiet) ? 'RUNNING' : 'RUNNING (|)'), value.title);
 
         running[value.id] = {
           draft,
@@ -384,25 +403,28 @@ async function run(map, target, update, parallel, coverage, config)
           timestamp: Date.now()
         };
 
-        running[value.id].interval = setInterval(() =>
+        if (!quiet)
         {
-          const { timestamp, frame } = running[value.id];
-
-          const time = roundTime(Date.now(), timestamp);
-
-          // upgrade the animation to the next frame
-          if (frame >= 3)
-            running[value.id].frame = 0;
-          else
-            running[value.id].frame = frame + 1;
-
-          // show that a test is taking too much time (over 15 seconds)
-          if (time >= 15)
-            draft(c.bold.blueBright('RUNNING'), c.bold.red(`(${time}s)`), value.title);
-          else
-            // eslint-disable-next-line security/detect-object-injection
-            draft(c.bold.blueBright(`RUNNING (${animation[frame]})`), value.title);
-        }, 500);
+          running[value.id].interval = setInterval(() =>
+          {
+            const { timestamp, frame } = running[value.id];
+  
+            const time = roundTime(Date.now(), timestamp);
+  
+            // upgrade the animation to the next frame
+            if (frame >= 3)
+              running[value.id].frame = 0;
+            else
+              running[value.id].frame = frame + 1;
+  
+            // show that a test is taking too much time (over 15 seconds)
+            if (time >= 15)
+              draft(c.bold.blueBright('RUNNING'), c.bold.red(`(${time}s)`), value.title);
+            else
+              // eslint-disable-next-line security/detect-object-injection
+              draft(c.bold.blueBright(`RUNNING (${animation[frame]})`), value.title);
+          }, 500);
+        }
       }
       else
       {
