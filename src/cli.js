@@ -60,7 +60,6 @@ async function readConfig()
   }
   catch
   {
-
     if (quiet)
       return;
       
