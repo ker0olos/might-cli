@@ -146,6 +146,8 @@ export async function runner(options, callback)
 
   const skipped = [];
 
+  let fullscreen = false;
+
   let passed = 0;
   let updated = 0;
   let failed = 0;
@@ -192,9 +194,9 @@ export async function runner(options, callback)
   const browser = await puppeteer.launch({
     timeout: 15000,
     defaultViewport: {
-      hasTouch: false,
       width: options.viewport.width,
       height: options.viewport.height,
+      hasTouch: false,
       isMobile: false,
       isLandscape: false,
       deviceScaleFactor: 1
@@ -255,9 +257,12 @@ export async function runner(options, callback)
       // run the steps
       for (const step of test.steps)
       {
-        const s = await runStep(page, selector, step, options);
+        const returnValue = await runStep(page, selector, step, options);
 
-        selector = s ?? selector;
+        if (step.action === 'viewport')
+          fullscreen = returnValue;
+        else
+          selector = returnValue ?? selector;
       }
 
       // all steps were executed
@@ -273,7 +278,8 @@ export async function runner(options, callback)
       {
         // save screenshot to disk
         await page.screenshot({
-          path: screenshotPath
+          path: screenshotPath,
+          fullPage: fullscreen
         });
 
         callback('progress', {
@@ -297,7 +303,9 @@ export async function runner(options, callback)
       else
       {
         // compare the new screenshot
-        const img1 = PNG.sync.read(await page.screenshot({}));
+        const img1 = PNG.sync.read(await page.screenshot({
+          fullPage: fullscreen
+        }));
 
         // with the old screenshot
         const img2 = PNG.sync.read(await readFile(screenshotPath));
@@ -432,21 +440,45 @@ async function runStep(page, selector, step, options)
   }
   else if  (step.action === 'viewport')
   {
+    const value = step.value;
+    
+    const current = page.viewport();
+    
+    let width = current.width;
+    let height = current.height;
+
     let touch = false;
+    let fullscreen = false;
 
-    const [ width, height ] = step.value.split('x');
+    if (value.includes('x'))
+    {
+      let [ w, h ] = step.value.split('x');
 
-    if (height.endsWith('t'))
+      w = parseInt(w), h = parseInt(h);
+
+      if (!isNaN(w))
+        width = w;
+
+      if (!isNaN(h))
+        height = h;
+    }
+
+    if (value.includes('t'))
       touch = true;
 
+    if (value.includes('f'))
+      fullscreen = true;
+
     await page.setViewport({
+      width,
+      height,
       hasTouch: touch,
-      width: parseInt(width),
-      height: parseInt(height),
       isMobile: false,
       isLandscape: false,
       deviceScaleFactor: 1
     });
+
+    return fullscreen;
   }
   else if (step.action === 'goto')
   {
