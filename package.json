@@ -46,7 +46,7 @@
     "istanbul-lib-report": "^3.0.0",
     "istanbul-reports": "^3.0.2",
     "md5": "^2.3.0",
-    "might-core": "^0.3.3",
+    "might-core": "^0.3.4",
     "nanomatch": "^1.2.13",
     "node-fetch": "^2.6.0",
     "p-limit": "^3.0.2",
