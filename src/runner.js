@@ -146,8 +146,6 @@ export async function runner(options, callback)
 
   const skipped = [];
 
-  let fullscreen = false;
-
   let passed = 0;
   let updated = 0;
   let failed = 0;
@@ -222,6 +220,8 @@ export async function runner(options, callback)
     {
       let selector;
       
+      let fullscreen = false;
+
       callback('progress', {
         id,
         title,
@@ -279,7 +279,7 @@ export async function runner(options, callback)
         // save screenshot to disk
         await page.screenshot({
           path: screenshotPath,
-          fullPage: fullscreen
+          fullPage: true
         });
 
         callback('progress', {
@@ -302,20 +302,37 @@ export async function runner(options, callback)
       }
       else
       {
-        // compare the new screenshot
-        const img1 = PNG.sync.read(await page.screenshot({
-          fullPage: fullscreen
-        }));
+        try
+        {
+          // compare the new screenshot
+          const img1 = PNG.sync.read(await page.screenshot({
+            fullPage: fullscreen
+          }));
 
-        // with the old screenshot
-        const img2 = PNG.sync.read(await readFile(screenshotPath));
+          // with the old screenshot
+          const img2 = PNG.sync.read(await readFile(screenshotPath));
 
-        const diff = new PNG({ width: img1.width, height: img1.height });
+          const diff = new PNG({ width: img1.width, height: img1.height });
 
-        const mismatch = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height);
+          const mismatch = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height);
 
-        // throw error if they don't match each other
-        if (mismatch > 0)
+          // throw error if they don't match each other
+          if (mismatch > 0)
+          {
+            throw new MismatchError(`Error: Mismatched ${mismatch} pixels`, PNG.sync.write(diff));
+          }
+          else
+          {
+            callback('progress', {
+              id,
+              title,
+              state: 'passed'
+            });
+
+            passed = passed + 1;
+          }
+        }
+        catch (e)
         {
           if (options.update)
           {
@@ -325,18 +342,8 @@ export async function runner(options, callback)
           }
           else
           {
-            throw new MismatchError(`Error: Mismatched ${mismatch} pixels`, PNG.sync.write(diff));
+            throw e;
           }
-        }
-        else
-        {
-          callback('progress', {
-            id,
-            title,
-            state: 'passed'
-          });
-  
-          passed = passed + 1;
         }
       }
 
