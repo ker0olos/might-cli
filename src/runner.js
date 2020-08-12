@@ -495,7 +495,11 @@ async function runStep(page, selector, step, options)
   {
     const { hasTouch } = page.viewport();
 
-    if (hasTouch)
+    if (step.value === 'right')
+      await page.click(selector, { button: 'right' });
+    if (step.value === 'middle')
+      await page.click(selector, { button: 'middle' });
+    else if (hasTouch)
       await page.tap(selector);
     else
       await page.click(selector, { button: 'left' });
