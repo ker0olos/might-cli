@@ -279,7 +279,7 @@ export async function runner(options, callback)
         // save screenshot to disk
         await page.screenshot({
           path: screenshotPath,
-          fullPage: true
+          fullPage: fullscreen
         });
 
         callback('progress', {
