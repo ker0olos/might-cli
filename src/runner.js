@@ -190,8 +190,6 @@ export async function runner(options, callback)
 
   // launch puppeteer
   const browser = await puppeteer.launch({
-    headless: false,
-    slowMo: 250,
     timeout: 15000,
     defaultViewport: {
       width: options.viewport.width,
