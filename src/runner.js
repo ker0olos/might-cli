@@ -229,7 +229,9 @@ export async function runner(options, callback)
         state: 'running'
       });
 
-      const page = await browser.newPage();
+      const context = await browser.createIncognitoBrowserContext();
+
+      const page = await context.newPage();
 
       // start collecting coverage
       if (options.coverage)
@@ -323,8 +325,11 @@ export async function runner(options, callback)
           // throw error if they don't match each other
           if (diff.percent > 0)
           {
+            const round = Math.round(((diff.percent * 100) + Number.EPSILON) * 100) / 100;
+
             throw new MismatchError(
-              `Error: Images are ${Math.round(diff.percent * 100)}% different`,
+              `Error: Images are ${round}% different`,
+
               await diff.image.getBufferAsync(jimp.MIME_PNG)
             );
           }
@@ -370,7 +375,10 @@ export async function runner(options, callback)
       }
 
       // close the page
+      
       await page.close();
+      
+      await context.close();
     }
     catch (e)
     {
