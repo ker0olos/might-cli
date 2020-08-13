@@ -1,12 +1,10 @@
-import { PNG } from 'pngjs';
+import jimp from 'jimp';
 
 import puppeteer from 'puppeteer';
 
 import { keyDefinitions } from 'puppeteer/lib/cjs/puppeteer/common/USKeyboardLayout.js';
 
 import limit from 'p-limit';
-
-import pixelmatch from 'pixelmatch';
 
 import md5 from 'md5';
 
@@ -15,6 +13,8 @@ import { join } from 'path';
 import { pathExists, ensureDir, readFile, emptyDir } from 'fs-extra';
 
 import { stepsToString } from 'might-core';
+
+import screenshot from './screenshot.js';
 
 import { coverage } from './coverage.js';
 
@@ -272,14 +272,14 @@ export async function runner(options, callback)
 
       const screenshotExists = await pathExists(screenshotPath);
 
-      // new first-run test or a forced update command
-
+      // new first-run test or a forced update
       const update = async(force) =>
       {
-        // save screenshot to disk
-        await page.screenshot({
-          path: screenshotPath,
-          fullPage: fullscreen
+        // take a new screenshot and save it to disk
+        await screenshot({
+          page,
+          full: fullscreen,
+          path: screenshotPath
         });
 
         callback('progress', {
@@ -305,21 +305,27 @@ export async function runner(options, callback)
         try
         {
           // compare the new screenshot
-          const img1 = PNG.sync.read(await page.screenshot({
-            fullPage: fullscreen
+          const img1 = await jimp.read(await screenshot({
+            page,
+            full: fullscreen
           }));
 
           // with the old screenshot
-          const img2 = PNG.sync.read(await readFile(screenshotPath));
+          const img2 = await jimp.read(await readFile(screenshotPath));
 
-          const diff = new PNG({ width: img1.width, height: img1.height });
+          if (img1.getWidth() !== img2.getWidth() ||
+            img1.getHeight() !== img2.getHeight())
+            throw new Error('Error: Images have different sizes');
 
-          const mismatch = pixelmatch(img1.data, img2.data, diff.data, img1.width, img1.height);
-
+          const diff = jimp.diff(img1, img2);
+          
           // throw error if they don't match each other
-          if (mismatch > 0)
+          if (diff.percent > 0)
           {
-            throw new MismatchError(`Error: Mismatched ${mismatch} pixels`, PNG.sync.write(diff));
+            throw new MismatchError(
+              `Error: Images are ${Math.round(diff.percent * 100)}% different`,
+              await diff.image.getBufferAsync(jimp.MIME_PNG)
+            );
           }
           else
           {
@@ -363,7 +369,7 @@ export async function runner(options, callback)
       }
 
       // close the page
-      await page.close({});
+      await page.close();
     }
     catch (e)
     {
