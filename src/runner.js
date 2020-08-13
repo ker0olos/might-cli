@@ -190,6 +190,8 @@ export async function runner(options, callback)
 
   // launch puppeteer
   const browser = await puppeteer.launch({
+    headless: false,
+    slowMo: 250,
     timeout: 15000,
     defaultViewport: {
       width: options.viewport.width,
@@ -199,7 +201,8 @@ export async function runner(options, callback)
       isLandscape: false,
       deviceScaleFactor: 1
     },
-    args: [ '--no-sandbox', '--disable-setuid-sandbox' ]
+    // disable-web-security is used because of CORS rejections
+    args: [ '--no-sandbox', '--disable-web-security', '--disable-setuid-sandbox' ]
   });
 
   // announce the amount of tests that are pending
