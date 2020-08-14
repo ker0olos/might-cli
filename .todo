@@ -1,6 +1,6 @@
 Performance Issues and Bugs:
-  ☐ drag and swipe use mouse events even if the viewport is touch enabled
-    puppeteer does not support touch events at least none that I know of.
+  - drag and swipe use mouse events even if the viewport is touch-enabled.
+     - puppeteer does not support touch events at least none that I know of.
 
 Documentation:
 
@@ -9,7 +9,6 @@ Map:
 Runner:
 
 Coverage:
-  ☐ improve statement maps
+  ☐ improve statement maps @low
 
 CLI:
-  ☐ output unused screenshots to the terminal and add a option to clean them @low

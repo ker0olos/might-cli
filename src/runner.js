@@ -10,7 +10,7 @@ import md5 from 'md5';
 
 import { join } from 'path';
 
-import { pathExists, ensureDir, readFile, emptyDir } from 'fs-extra';
+import { pathExists, readFile, ensureDir, emptyDir, readdir, unlink } from 'fs-extra';
 
 import { stepsToString } from 'might-core';
 
@@ -41,6 +41,7 @@ import { coverage } from './coverage.js';
 * @property { boolean } update
 * @property { number } parallel
 * @property { boolean } coverage
+* @property { boolean } clean
 * @property { string } screenshotsDir
 * @property { string } coverageDir
 * @property { number } stepTimeout
@@ -119,7 +120,7 @@ export async function runner(options, callback)
   options.viewport.width = (typeof options.viewport.width !== 'number') ? 1366 : (options.viewport.width || 1366);
   options.viewport.height = (typeof options.viewport.height !== 'number') ? 768 : (options.viewport.height || 768);
 
-  options.stepTimeout = (typeof options.stepTimeout !== 'number') ? 15000 : (options.stepTimeout || 15000);
+  options.stepTimeout = (typeof options.stepTimeout !== 'number') ? 25000 : (options.stepTimeout || 25000);
 
   options.parallel = (typeof options.parallel !== 'number') ? 3 : (options.parallel || 3);
 
@@ -161,7 +162,7 @@ export async function runner(options, callback)
       skipped.push(t);
     // leave the test in map
     // if its a target
-    else if (Array.isArray(options.target))
+    else if (options.target)
     {
       if (options.target.includes(t.title))
         return true;
@@ -187,6 +188,16 @@ export async function runner(options, callback)
 
   // ensure the screenshots directory exists
   await ensureDir(options.screenshotsDir);
+
+  const screenshots = {};
+
+  // get all files in the screenshots directory
+  (await readdir(options.screenshotsDir))
+    .forEach((p) =>
+    {
+      if (p.endsWith('.png'))
+        screenshots[join(options.screenshotsDir, p)] = true;
+    });
 
   // launch puppeteer
   const browser = await puppeteer.launch({
@@ -285,6 +296,10 @@ export async function runner(options, callback)
           path: screenshotPath
         });
 
+        // mark screenshot as used
+        // eslint-disable-next-line security/detect-object-injection
+        screenshots[screenshotPath] = false;
+
         callback('progress', {
           id,
           title,
@@ -335,6 +350,10 @@ export async function runner(options, callback)
           }
           else
           {
+            // mark screenshot as used
+            // eslint-disable-next-line security/detect-object-injection
+            screenshots[screenshotPath] = false;
+
             callback('progress', {
               id,
               title,
@@ -425,8 +444,24 @@ export async function runner(options, callback)
     });
   }
 
+  // filter screenshots that were used to only get the unused ones
+  // eslint-disable-next-line security/detect-object-injection
+  const unused = Object.keys(screenshots).filter(key => screenshots[key] === true);
+
+  // cleaning unused screenshots
+  // screenshots are only cleaned if no tests were targeted
+  if (!options.target && options.clean)
+  {
+    for (let i = 0; i < unused.length; i++)
+    {
+      // eslint-disable-next-line security/detect-object-injection
+      await unlink(unused[i]);
+    }
+  }
+
   callback('done', {
     total: map.length + skipped.length,
+    unused,
     passed,
     updated,
     skipped: skipped.length,

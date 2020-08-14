@@ -1,5 +1,7 @@
 #! /usr/bin/env node
 
+import minimist from 'minimist';
+
 import c from 'ansi-colors';
 import prompts from 'prompts';
 
@@ -166,12 +168,14 @@ async function readMap(dialog)
   }
 }
 
-/** the main process "loop"
+/** the main process
 */
 async function main()
 {
+  const argv = minimist(process.argv.slice(2));
+
   // open help menu
-  if (process.argv.includes('--help') || process.argv.includes('-h'))
+  if (argv.help || argv.h)
   {
     console.log(c.bold.cyan('--help, -h'), '       Opens this help menu.');
     console.log(c.bold.cyan('--map, -m'), '        Opens Might UI (even if not installed).');
@@ -180,6 +184,7 @@ async function main()
 
     console.log(c.bold.cyan('--target, -t'), '     [string]   List the tests that should run (use their titles and separate them with a comma).');
     console.log(c.bold.cyan('--update, -u'), '     [boolean]  Updates the screenshots of targeted tests (if no tests were targeted it updates any failed tests).');
+    console.log(c.bold.cyan('--clean'), '          [boolean]  Deletes all unused screenshots.');
 
     console.log();
 
@@ -187,7 +192,7 @@ async function main()
     console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end (experimental).');
   }
   // opens might-ui (even if not installed because npx is cool)
-  else if (process.argv.includes('--map') || process.argv.includes('-m'))
+  else if (argv.map || argv.m)
   {
     running = spawn('npx might-ui', { shell: true, cwd: process.cwd() });
 
@@ -201,7 +206,15 @@ async function main()
   // start runner
   else
   {
-    let target, parallel;
+    const clean = argv.clean;
+
+    const update = argv.update || argv.u;
+
+    const coverage = argv.coverage || argv.c;
+
+    let target = argv.target ?? argv.t;
+
+    const parallel = argv.parallel ?? argv.p;
 
     if (quiet)
       console.log(c.magenta('Might discovered it\'s running inside a CI environment, it will be quieter.\n'));
@@ -213,55 +226,27 @@ async function main()
       throw new Error('Error: Unable to load config file');
 
     // spawn the start command
-    if (typeof config.startCommand === 'string' && config.startCommand)
+    if (typeof config.startCommand === 'string' && config.startCommand.length)
       start(config.startCommand);
 
-    if (process.argv.includes('--target'))
-      target = process.argv.indexOf('--target');
-    else if (process.argv.includes('-t'))
-      target = process.argv.indexOf('-t');
-
-    if (target > -1)
+    // handle target parsing
+    if (typeof target === 'string')
     {
-      target = process.argv[target + 1];
-
       // split by commas but allow commas to be escaped
-      if (target)
-        target = target.match(/(?:\\,|[^,])+/g).map((t) => t.trim());
+      target = target.match(/(?:\\,|[^,])+/g).map((t) => t.trim());
+      
+      if (target.length <= 0)
+        target = undefined;
     }
     else
     {
       target = undefined;
     }
 
-    if (process.argv.some((s) => s.startsWith('--parallel')))
-      parallel = process.argv.findIndex((s) => s.startsWith('--parallel'));
-    else if (process.argv.includes('-p'))
-      parallel = process.argv.indexOf('-p');
-
-    if (parallel > -1)
-    {
-      // eslint-disable-next-line security/detect-object-injection
-      const value = process.argv[parallel];
-
-      if (value.includes('='))
-        parallel = parseInt(value.split('=')[1]);
-      else
-        parallel = parseInt(process.argv[parallel + 1]);
-    }
-    else
-    {
-      parallel = undefined;
-    }
-
     // read the map file
     const map = await readMap(true);
 
-    const update = process.argv.includes('--update') || process.argv.includes('-u');
-
-    const coverage = process.argv.includes('--coverage') || process.argv.includes('-c');
-
-    await run(map, target, update, parallel, coverage, config);
+    await run(map, target, update, parallel, coverage, clean, config);
   }
 }
 
@@ -280,9 +265,10 @@ function start(command)
 * @param { boolean } update
 * @param { number } parallel
 * @param { boolean } coverage
+* @param { boolean } clean
 * @param { Config } config
 */
-async function run(map, target, update, parallel, coverage, config)
+async function run(map, target, update, parallel, coverage, clean, config)
 {
   const updateFailed = update && !target;
   const updateAll = update && target;
@@ -308,6 +294,7 @@ async function run(map, target, update, parallel, coverage, config)
     update,
     parallel: parallel ?? config.parallelTests,
     coverage,
+    clean,
     screenshotsDir: resolve('__might__'),
     coverageDir: resolve('__coverage__'),
     stepTimeout: config.defaultTimeout,
@@ -386,6 +373,19 @@ async function run(map, target, update, parallel, coverage, config)
         }
 
         log(`Summary:${updateNotice} ${passed}${updated}${failed}${skipped}${total}.`);
+        
+        if (!target && value.unused.length)
+        {
+          const plural = value.unused.length > 1 ?  'screenshots' : 'screenshot';
+          const pronoun = value.unused.length > 1 ?  'them' : 'it';
+
+          // screenshots are only cleaned if no tests are targeted
+          if (clean)
+            console.log(c.yellow.bold(`\nDeleted ${value.unused.length} unused ${plural}.`));
+          // only log about unused screenshots when no tests are targeted
+          else
+            console.log(c.yellow(`\nFound ${value.unused.length} unused ${plural}, use --clean to delete ${pronoun}.`));
+        }
       }
     }
 
