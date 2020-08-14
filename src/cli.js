@@ -328,7 +328,7 @@ async function run(map, target, update, parallel, coverage, config)
       // if there's a property called diff that means that it's a mismatch error
       if (value.diff)
       {
-        const filename = resolve(`might.error.${new Date().toISOString()}.png`);
+        const filename = resolve(`might.error.${new Date().toISOString().replace(/:/g, '-')}.png`);
 
         //  write the difference image to disk
         writeFileSync(filename, value.diff);
