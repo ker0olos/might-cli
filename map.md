@@ -12,7 +12,8 @@
 
           // We don't document those because we don't encourage writing tests manually (you know the "no-code" part of the project and such).
 
-          // But you can have a look at https://github.com/ItsKerolos/might-core/blob/master/src/index.js
+          // But you can have a look at
+          // https://github.com/ItsKerolos/might-cli/blob/master/src/runner.js#L443
           // and try to figure it out
 
           "action": "",

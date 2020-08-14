@@ -26,13 +26,13 @@
   },
   "homepage": "https://github.com/ItsKerolos/might-cli#readme",
   "keywords": [
-    "test",
     "testing",
-    "ui",
-    "ui-testing",
-    "end-to-end-test",
-    "end-to-end-test-automation",
+    "coverage",
+    "coverage-reports",
     "end-to-end-testing",
+    "ui-testing",
+    "front-end-testing",
+    "end-to-end-test-automation",
     "end-to-end-testing-interface"
   ],
   "dependencies": {
