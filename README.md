@@ -4,21 +4,19 @@
 
 **This project is still new, issues are to be expected.**
 
-## The Problem
-
 End-to-end testing can get very complicated and overwhelming; especially if you need to start testing huge apps, that would take a lot of time and afford, and will be boring and repetitive.
 
-## The Solution
+### The Solution
 
 A no-code method to perform and manage end-to-end tests, handling all of the mess in the background.
 
 [Might UI](https://github.com/ItsKerolos/Might) is an easy way to create, manage and edit tests, and [Might CLI](https://github.com/ItsKerolos/might-cli) runs those tests.
 
-## Installation
+### Installation
 `
 npm install --save-dev might-cli`
 
-## Usage
+### Usage
 
 `npx might`
 
@@ -43,7 +41,7 @@ Run `npx might -m` to open the UI regardless of it's installed or not;
 > If you really want to write tests manually (not recommended) look at
 > [map.md](https://github.com/ItsKerolos/might-cli/blob/master/map.md).
 
-#### *Might UI In Action:*
+##### *Might UI In Action:*
 [![](https://github.com/ItsKerolos/Might/raw/master/screenshots/1.png)]()
 
 ---
