@@ -206,16 +206,6 @@ async function main()
   // start runner
   else
   {
-    const clean = argv.clean;
-
-    const update = argv.update || argv.u;
-
-    const coverage = argv.coverage || argv.c;
-
-    let target = argv.target ?? argv.t;
-
-    const parallel = argv.parallel ?? argv.p;
-
     if (quiet)
       console.log(c.magenta('Might discovered it\'s running inside a CI environment, it will be quieter.\n'));
 
@@ -229,24 +219,10 @@ async function main()
     if (typeof config.startCommand === 'string' && config.startCommand.length)
       start(config.startCommand);
 
-    // handle target parsing
-    if (typeof target === 'string')
-    {
-      // split by commas but allow commas to be escaped
-      target = target.match(/(?:\\,|[^,])+/g).map((t) => t.trim());
-      
-      if (target.length <= 0)
-        target = undefined;
-    }
-    else
-    {
-      target = undefined;
-    }
-
     // read the map file
     const map = await readMap(true);
 
-    await run(map, target, update, parallel, coverage, clean, config);
+    await run(map, config);
   }
 }
 
@@ -261,17 +237,38 @@ function start(command)
 /** run the tests and output their progress and outcome
 * to the terminal
 * @param { import('./runner.js').Map } map
-* @param { [] } target
-* @param { boolean } update
-* @param { number } parallel
-* @param { boolean } coverage
-* @param { boolean } clean
 * @param { Config } config
 */
-async function run(map, target, update, parallel, coverage, clean, config)
+async function run(map, config)
 {
+  const argv = minimist(process.argv.slice(2));
+
+  const clean = argv.clean;
+
+  const update = argv.update || argv.u;
+
+  const coverage = argv.coverage || argv.c;
+
+  let target = argv.target ?? argv.t;
+
+  const parallel = argv.parallel ?? argv.p;
+
   const updateFailed = update && !target;
   const updateAll = update && target;
+
+  // handle target parsing
+  if (typeof target === 'string')
+  {
+    // split by commas but allow commas to be escaped
+    target = target.match(/(?:\\,|[^,])+/g).map((t) => t.trim());
+    
+    if (target.length <= 0)
+      target = undefined;
+  }
+  else
+  {
+    target = undefined;
+  }
 
   // hide cursor
   hideCursor();

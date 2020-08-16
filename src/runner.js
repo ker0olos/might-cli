@@ -211,7 +211,11 @@ export async function runner(options, callback)
       deviceScaleFactor: 1
     },
     // disable-web-security is used because of CORS rejections
-    args: [ '--no-sandbox', '--disable-web-security', '--disable-setuid-sandbox' ]
+    args: [
+      '--no-sandbox',
+      '--disable-web-security',
+      '--disable-setuid-sandbox'
+    ]
   });
 
   // announce the amount of tests that are pending
@@ -337,9 +341,15 @@ export async function runner(options, callback)
 
           const diff = jimp.diff(img1, img2);
           
-          // throw error if they don't match each other
-          if (diff.percent > 0)
+          // pixelmatch (what jimp uses in jimp.diff)
+          // have issues with anti-aliasing that might cause tests to fail
+          // and because of that we had to increase what amount that triggers a test fail
+          // this is not ideal but this number is so low
+          // it's not worth wasting any more time on it right now
+          if (diff.percent > 0.000015)
           {
+            // throw error if they don't match each other
+            
             const round = Math.round(((diff.percent * 100) + Number.EPSILON) * 100) / 100;
 
             throw new MismatchError(
@@ -584,14 +594,19 @@ async function runStep(page, selector, step, options)
   {
     const { hasTouch } = page.viewport();
 
-    if (step.value === 'right')
-      await page.click(selector, { button: 'right' });
-    else if (step.value === 'middle')
-      await page.click(selector, { button: 'middle' });
-    else if (hasTouch)
-      await page.tap(selector);
-    else
-      await page.click(selector, { button: 'left' });
+    const elements = await page.$$(selector);
+
+    for (const elem of elements)
+    {
+      if (step.value === 'right')
+        await elem.click({ button: 'right' });
+      else if (step.value === 'middle')
+        await elem.click({ button: 'middle' });
+      else if (hasTouch)
+        await elem.tap();
+      else
+        await elem.click({ button: 'left' });
+    }
   }
   else if (step.action === 'drag')
   {
@@ -726,6 +741,24 @@ async function runStep(page, selector, step, options)
   }
   else if (step.action === 'type')
   {
-    await page.type(selector, step.value);
+    const elements = await page.$$(selector);
+
+    for (const elem of elements)
+    {
+      // get in the new value
+      const current = await elem.evaluate((elem) => elem.value);
+
+      // focus on the input element
+      await elem.focus();
+
+      // empty the input element's value
+      for (let i = 0; i < current.length; i++)
+      {
+        await page.keyboard.press('Backspace');
+      }
+
+      // type in the new value
+      await page.keyboard.type(step.value);
+    }
   }
 }
