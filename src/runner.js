@@ -676,8 +676,10 @@ async function runStep(page, selector, step, options)
     */
     const split = step.value.replace('++', '+NumpadAdd').split('+');
 
+    const elem = await page.$(selector);
+
     // make sure the selected element is focused
-    await page.focus(selector);
+    await elem.focus();
 
     let shift = false, ctrl = false, alt = false;
 
@@ -733,6 +735,10 @@ async function runStep(page, selector, step, options)
 
     if (alt)
       await page.keyboard.up('Alt');
+
+    // blur the element after that because
+    // input caret can ruin tests
+    await elem.evaluate((elem) => elem.blur());
   }
   else if (step.action === 'type')
   {
