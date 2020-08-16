@@ -340,13 +340,8 @@ export async function runner(options, callback)
             throw new Error('Error: Images have different sizes');
 
           const diff = jimp.diff(img1, img2);
-          
-          // pixelmatch (what jimp uses in jimp.diff)
-          // have issues with anti-aliasing that might cause tests to fail
-          // and because of that we had to increase what amount that triggers a test fail
-          // this is not ideal but this number is so low
-          // it's not worth wasting any more time on it right now
-          if (diff.percent > 0.000015)
+
+          if (diff.percent > 0)
           {
             // throw error if they don't match each other
             
@@ -759,6 +754,10 @@ async function runStep(page, selector, step, options)
 
       // type in the new value
       await page.keyboard.type(step.value);
+
+      // blur the element after that because
+      // input caret can ruin tests
+      await elem.evaluate((elem) => elem.blur());
     }
   }
 }
