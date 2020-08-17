@@ -203,6 +203,13 @@ async function main()
     // awaits for eternity
     await new Promise(() => undefined);
   }
+  // display version number
+  else if (argv.version || argv.v)
+  {
+    const json = require('../package.json');
+
+    console.log(`v${json.version}`);
+  }
   // start runner
   else
   {
