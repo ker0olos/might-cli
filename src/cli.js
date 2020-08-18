@@ -9,6 +9,8 @@ import draftlog from 'draftlog';
 
 import isCI from 'is-ci';
 
+import sanitize from 'sanitize-filename';
+
 import { join } from 'path';
 
 import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
@@ -24,6 +26,7 @@ import { runner } from './runner.js';
 * @property { string } startCommand
 * @property { string } url
 * @property { { width: number, height: number } } viewport
+* @property { boolean } titleBasedScreenshots
 * @property { number } parallelTests
 * @property { number } defaultTimeout
 * @property { string[] } coverageExclude
@@ -107,6 +110,7 @@ async function readConfig()
         width: null,
         height: null
       },
+      titleBasedScreenshots: false,
       parallelTests: null,
       defaultTimeout: null,
       coverageExclude: [
@@ -301,6 +305,7 @@ async function run(map, config)
     clean,
     screenshotsDir: resolve('__might__'),
     coverageDir: resolve('__coverage__'),
+    titleBasedScreenshots: config.titleBasedScreenshots,
     stepTimeout: config.defaultTimeout,
     coverageExclude: config.coverageExclude,
     coverageIgnoreLines: config.coverageIgnoreLines
@@ -319,7 +324,7 @@ async function run(map, config)
       // if there's a property called diff that means that it's a mismatch error
       if (value.diff)
       {
-        const filename = resolve(`might.error.${new Date().toISOString().replace(/:/g, '-')}.png`);
+        const filename = resolve(sanitize(`might.error.${new Date().toISOString()}.png`));
 
         //  write the difference image to disk
         writeFileSync(filename, value.diff);

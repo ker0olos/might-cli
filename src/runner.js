@@ -6,6 +6,8 @@ import { keyDefinitions } from 'puppeteer/lib/cjs/puppeteer/common/USKeyboardLay
 
 import limit from 'p-limit';
 
+import sanitize from 'sanitize-filename';
+
 import md5 from 'md5';
 
 import { join } from 'path';
@@ -44,6 +46,7 @@ import { coverage } from './coverage.js';
 * @property { boolean } clean
 * @property { string } screenshotsDir
 * @property { string } coverageDir
+* @property { boolean } titleBasedScreenshots
 * @property { number } stepTimeout
 * @property { string[] } coverageExclude
 * @property { import('./coverage').CoverageIgnore } coverageIgnoreLines
@@ -119,6 +122,8 @@ export async function runner(options, callback)
 
   options.viewport.width = (typeof options.viewport.width !== 'number') ? 1366 : (options.viewport.width || 1366);
   options.viewport.height = (typeof options.viewport.height !== 'number') ? 768 : (options.viewport.height || 768);
+
+  options.titleBasedScreenshots = (typeof options.titleBasedScreenshots !== 'boolean') ? false : options.titleBasedScreenshots;
 
   options.stepTimeout = (typeof options.stepTimeout !== 'number') ? 25000 : (options.stepTimeout || 25000);
 
@@ -285,7 +290,27 @@ export async function runner(options, callback)
 
       // all steps were executed
 
-      const screenshotId = md5(stepsToString(test.steps));
+      let screenshotId;
+
+      // if enabled then screenshots names are based on the test's title
+      // if 2 or more tests have the same title they will have the same screenshot
+      // and can cause tests to fail
+      if (options.titleBasedScreenshots)
+      {
+        if (test.title)
+          screenshotId = sanitize(test.title);
+        else
+          screenshotId = sanitize(stepsToString(test.steps, { pretty: true }));
+      }
+      // if not then screenshots names are based on the md5 sum of all the test's steps
+      // if 2 or more tests have the same title they will have the same screenshot
+      // but same the series of steps should always result the same screenshot
+      // each time they run
+      else
+      {
+        screenshotId = md5(stepsToString(test.steps));
+      }
+
       const screenshotPath = join(options.screenshotsDir, `${screenshotId}.png`);
 
       const screenshotExists = await pathExists(screenshotPath);
