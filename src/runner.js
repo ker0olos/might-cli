@@ -303,8 +303,8 @@ export async function runner(options, callback)
           screenshotId = sanitize(stepsToString(test.steps, { pretty: true }));
       }
       // if not then screenshots names are based on the md5 sum of all the test's steps
-      // if 2 or more tests have the same title they will have the same screenshot
-      // but same the series of steps should always result the same screenshot
+      // if 2 or more tests have the same exact steps they will have the same screenshot
+      // but same the series of steps should always result into the same screenshot
       // each time they run
       else
       {
