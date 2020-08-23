@@ -6,6 +6,8 @@ import { keyDefinitions } from 'puppeteer/lib/cjs/puppeteer/common/USKeyboardLay
 
 import limit from 'p-limit';
 
+import looksSame from 'looks-same';
+
 import sanitize from 'sanitize-filename';
 
 import md5 from 'md5';
@@ -106,6 +108,67 @@ function retry(fn, delay, maxTime)
     };
 
     call().catch(fail);
+  });
+}
+
+
+/**
+* @param { Buffer } img1
+* @param { Buffer } img2
+* @returns { Promise<{ same: boolean, differences: number, diffImage: Buffer }> }
+*/
+function difference(img1, img2)
+{
+  const opts = {
+    strict: false,
+    tolerance: 2.5,
+
+    ignoreCaret: true,
+    ignoreAntialiasing: true,
+    antialiasingTolerance: 0
+  };
+
+  return new Promise((resolve, reject) =>
+  {
+    looksSame(img1, img2, opts, (err, result) =>
+    {
+      if (err)
+      {
+        reject(err);
+
+        return;
+      }
+
+      if (!result.equal)
+      {
+        looksSame.createDiff({
+          reference: img1,
+          current: img2,
+          highlightColor: '#FF00FF',
+          ...opts
+        }, (err, buffer) =>
+        {
+          if (err)
+          {
+            reject(err);
+    
+            return;
+          }
+
+          resolve({
+            same: false,
+            differences: result.diffClusters.length,
+            diffImage: buffer
+          });
+        });
+      }
+      else
+      {
+        resolve({
+          same: true
+        });
+      }
+    });
   });
 }
 
@@ -362,20 +425,17 @@ export async function runner(options, callback)
 
           if (img1.getWidth() !== img2.getWidth() ||
             img1.getHeight() !== img2.getHeight())
-            throw new Error('Error: Images have different sizes');
+            throw new Error('Error: Screenshots have different sizes');
 
-          const diff = jimp.diff(img1, img2, 0.2);
+          const diff = await difference(await img1.getBufferAsync(jimp.MIME_PNG), await img2.getBufferAsync(jimp.MIME_PNG));
 
-          if (diff.percent > 0)
+          if (!diff.same)
           {
             // throw error if they don't match each other
             
-            const round = Math.round(((diff.percent * 100) + Number.EPSILON) * 100) / 100;
-
             throw new MismatchError(
-              `Error: Images are ${round}% different`,
-
-              await diff.image.getBufferAsync(jimp.MIME_PNG)
+              `Error: Found ${diff.differences} differences in the screenshots`,
+              diff.diffImage
             );
           }
           else
