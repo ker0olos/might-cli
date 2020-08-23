@@ -364,7 +364,7 @@ export async function runner(options, callback)
             img1.getHeight() !== img2.getHeight())
             throw new Error('Error: Images have different sizes');
 
-          const diff = jimp.diff(img1, img2);
+          const diff = jimp.diff(img1, img2, 0.2);
 
           if (diff.percent > 0)
           {

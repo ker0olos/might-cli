@@ -1,6 +1,4 @@
-
 [![npm (tag)](https://img.shields.io/npm/v/might-cli/latest)](http://npmjs.com/package/might-cli)
-![npm](https://img.shields.io/npm/dm/might-cli)
 
 End-to-end testing can get very complicated and overwhelming; especially if you need to start testing huge apps, that would take a lot of time and afford, and will be boring and repetitive.
 
