@@ -50,6 +50,8 @@ import { coverage } from './coverage.js';
 * @property { string } coverageDir
 * @property { boolean } titleBasedScreenshots
 * @property { number } stepTimeout
+* @property { number } tolerance
+* @property { number } antialiasingTolerance
 * @property { string[] } coverageExclude
 * @property { import('./coverage').CoverageIgnore } coverageIgnoreLines
 */
@@ -115,17 +117,19 @@ function retry(fn, delay, maxTime)
 /**
 * @param { Buffer } img1
 * @param { Buffer } img2
+* @param { number } tolerance
+* @param { number } antialiasingTolerance
 * @returns { Promise<{ same: boolean, differences: number, diffImage: Buffer }> }
 */
-function difference(img1, img2)
+function difference(img1, img2, tolerance, antialiasingTolerance)
 {
   const opts = {
     strict: false,
-    tolerance: 2.5,
+    tolerance,
 
     ignoreCaret: true,
     ignoreAntialiasing: true,
-    antialiasingTolerance: 0
+    antialiasingTolerance
   };
 
   return new Promise((resolve, reject) =>
@@ -192,6 +196,9 @@ export async function runner(options, callback)
 
   options.parallel = (typeof options.parallel !== 'number') ? 3 : (options.parallel || 3);
 
+  options.tolerance = (typeof options.tolerance !== 'number') ? 2.5 : (options.tolerance || 2.5);
+  options.antialiasingTolerance = (typeof options.antialiasingTolerance !== 'number') ? 3.5 : (options.antialiasingTolerance || 3.5);
+  
   options.coverageExclude = (!Array.isArray(options.coverageExclude)) ? [] : options.coverageExclude;
 
   options.coverageIgnoreLines = (typeof options.coverageIgnoreLines !== 'object') ? {} : options.coverageIgnoreLines;
@@ -427,7 +434,12 @@ export async function runner(options, callback)
             img1.getHeight() !== img2.getHeight())
             throw new Error('Error: Screenshots have different sizes');
 
-          const diff = await difference(await img1.getBufferAsync(jimp.MIME_PNG), await img2.getBufferAsync(jimp.MIME_PNG));
+          const diff = await difference(
+            await img1.getBufferAsync(jimp.MIME_PNG),
+            await img2.getBufferAsync(jimp.MIME_PNG),
+            options.tolerance,
+            options.antialiasingTolerance
+          );
 
           if (!diff.same)
           {

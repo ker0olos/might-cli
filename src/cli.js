@@ -29,6 +29,8 @@ import { runner } from './runner.js';
 * @property { boolean } titleBasedScreenshots
 * @property { number } parallelTests
 * @property { number } defaultTimeout
+* @property { number } tolerance
+* @property { number } antialiasingTolerance
 * @property { string[] } coverageExclude
 * @property { import('./coverage').CoverageIgnore } coverageIgnoreLines
 */
@@ -111,8 +113,10 @@ async function readConfig()
         height: null
       },
       titleBasedScreenshots: false,
-      parallelTests: null,
-      defaultTimeout: null,
+      parallelTests: 3,
+      defaultTimeout: 25000,
+      tolerance: 2.5,
+      antialiasingTolerance: 3.5,
       coverageExclude: [
         // popular directories people hate
         '/node_modules/**',
@@ -307,6 +311,8 @@ async function run(map, config)
     coverageDir: resolve('__coverage__'),
     titleBasedScreenshots: config.titleBasedScreenshots,
     stepTimeout: config.defaultTimeout,
+    tolerance: config.tolerance,
+    antialiasingTolerance: config.antialiasingTolerance,
     coverageExclude: config.coverageExclude,
     coverageIgnoreLines: config.coverageIgnoreLines
   },
