@@ -409,7 +409,7 @@ async function run(map, config)
     {
       if (value.state === 'running')
       {
-        const draft = console.draft(c.bold.blueBright((quiet) ? 'RUNNING' : 'RUNNING (|)'), value.title);
+        const draft = (quiet) ? console.log : console.draft(c.bold.blueBright('RUNNING (|)'), value.title);
 
         running[value.id] = {
           draft,

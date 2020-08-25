@@ -4,6 +4,7 @@
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
+    "prepublishOnly": "npm version patch",
     "build": "rm -rf ./build && mkdir ./build && babel -d ./build ./src",
     "watch": "rm -rf ./build && mkdir ./build && babel -d ./build src -s --watch",
     "start": "node ./build/cli.js"
