@@ -4,7 +4,6 @@
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
-    "prepublishOnly": "npm version patch",
     "build": "rm -rf ./build && mkdir ./build && babel -d ./build ./src",
     "watch": "rm -rf ./build && mkdir ./build && babel -d ./build src -s --watch",
     "start": "node ./build/cli.js"
@@ -45,7 +44,7 @@
     "istanbul-lib-coverage": "^3.0.0",
     "istanbul-lib-report": "^3.0.0",
     "istanbul-reports": "^3.0.2",
-    "jimp": "^0.16.0",
+    "jimp": "^0.16.1",
     "looks-same": "^7.2.3",
     "md5": "^2.3.0",
     "merge-img": "^2.1.3",
