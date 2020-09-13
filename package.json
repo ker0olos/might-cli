@@ -1,6 +1,6 @@
 {
   "name": "might-cli",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
@@ -51,20 +51,20 @@
     "might-core": "^0.3.7",
     "minimist": "^1.2.5",
     "nanomatch": "^1.2.13",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "p-limit": "^3.0.2",
     "prompts": "^2.3.2",
     "ps-tree": "^1.2.0",
-    "puppeteer": "^5.2.1",
+    "puppeteer": "^5.3.0",
     "sanitize-filename": "^1.6.3",
     "source-map": "^0.7.3"
   },
   "devDependencies": {
-    "@babel/cli": "^7.10.5",
-    "@babel/core": "^7.11.4",
-    "@babel/preset-env": "^7.11.0",
+    "@babel/cli": "^7.11.6",
+    "@babel/core": "^7.11.6",
+    "@babel/preset-env": "^7.11.5",
     "babel-eslint": "^10.1.0",
-    "eslint": "^7.7.0",
+    "eslint": "^7.9.0",
     "eslint-plugin-security": "^1.4.0"
   }
 }
