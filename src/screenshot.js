@@ -5,8 +5,6 @@
 
 import jimp from 'jimp';
 
-import merge from 'merge-img';
-
 import { promisify } from 'util';
 
 /**
@@ -38,6 +36,51 @@ const pageDown = async(page) =>
 // };
 
 /**
+* @param { Buffer[] } images
+*/
+const merge = async(images) =>
+{
+  const color = 0x00000000;
+
+  let width = 0, height = 0;
+
+  const processImg = async(img) =>
+  {
+    const j = await jimp.read(img);
+
+    const data = {
+      img: j,
+      width: j.getWidth(),
+      height: j.getHeight()
+    };
+
+    if (data.width > width)
+      width = data.width;
+
+    height = height + data.height;
+
+    return data;
+  };
+
+  const imagesData = await Promise.all(images.map(processImg));
+
+  const reducedImage = new jimp(width, height, color);
+
+  const x = 0;
+  
+  let y = 0;
+
+  imagesData.forEach((obj) =>
+  {
+    reducedImage.composite(obj.img, x, y);
+
+    y = y + obj.height;
+  });
+
+  return reducedImage;
+};
+
+/**
 * @param { { page: import('puppeteer').Page, path: string, full: boolean } } options
 */
 export default async(options) =>
@@ -49,6 +92,9 @@ export default async(options) =>
   if (!options.full)
   {
     return await page.screenshot({
+      // if path exists
+      // it saves the screenshot to disk
+      // else it returns the image buffer instead
       path: options.path
     });
   }
@@ -76,6 +122,9 @@ export default async(options) =>
     });
   }
 
+  /**
+  * @type { Buffer[] }
+  */
   const images = [];
 
   for (let i = 0; i < pagesCount; i++)
@@ -107,8 +156,9 @@ export default async(options) =>
 
   images.push(cropped);
 
-  const mergedImage = await merge(images, { direction: true });
+  const mergedImage = await merge(images);
 
+  // update images on disk
   if (options.path)
   {
     mergedImage.write = mergedImage.write.bind(mergedImage);
@@ -119,6 +169,8 @@ export default async(options) =>
 
     return;
   }
+
+  // else return the merged image buffer
 
   mergedImage.getBuffer = mergedImage.getBuffer.bind(mergedImage);
 
