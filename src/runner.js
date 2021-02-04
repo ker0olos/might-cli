@@ -44,6 +44,7 @@ import { coverage } from './coverage.js';
 * @property { string[] } target
 * @property { boolean } update
 * @property { number } parallel
+* @property { number } retries
 * @property { boolean } coverage
 * @property { boolean } clean
 * @property { string } screenshotsDir
@@ -195,6 +196,7 @@ export async function runner(options, callback)
   options.stepTimeout = (typeof options.stepTimeout !== 'number') ? 25000 : (options.stepTimeout || 25000);
 
   options.parallel = (typeof options.parallel !== 'number') ? 3 : (options.parallel || 3);
+  options.retries = (typeof options.retries !== 'number') ? 1 : (options.retries || 1);
 
   options.tolerance = (typeof options.tolerance !== 'number') ? 2.5 : (options.tolerance || 2.5);
   options.antialiasingTolerance = (typeof options.antialiasingTolerance !== 'number') ? 3.5 : (options.antialiasingTolerance || 3.5);
@@ -299,9 +301,12 @@ export async function runner(options, callback)
   /**
   * @param { Test } test
   * @param { number } id
+  * @param { number } rIndex
   */
-  const runTest = async(test, id) =>
+  const runTest = async(test, id, rIndex) =>
   {
+    const retries = rIndex ?? 1;
+
     const title = test.title || stepsToString(test.steps, {
       pretty: true,
       url: options.url
@@ -432,7 +437,16 @@ export async function runner(options, callback)
 
           if (img1.getWidth() !== img2.getWidth() ||
             img1.getHeight() !== img2.getHeight())
-            throw new Error('Error: Screenshots have different sizes');
+          {
+            if (retries === options.retries)
+            {
+              throw new Error('Error: Screenshots have different sizes');
+            }
+            else
+            {
+              await runTest(test, id, retries + 1);
+            }
+          }
 
           const diff = await difference(
             await img1.getBufferAsync(jimp.MIME_PNG),
@@ -444,11 +458,18 @@ export async function runner(options, callback)
           if (!diff.same)
           {
             // throw error if they don't match each other
-            
-            throw new MismatchError(
-              `Error: Found ${diff.differences} differences in the screenshots`,
-              diff.diffImage
-            );
+
+            if (retries === options.retries)
+            {
+              throw new MismatchError(
+                `Error: Found ${diff.differences} differences in the screenshots`,
+                diff.diffImage
+              );
+            }
+            else
+            {
+              await runTest(test, id, retries + 1);
+            }
           }
           else
           {
