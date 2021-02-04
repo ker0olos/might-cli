@@ -28,6 +28,7 @@ import { runner } from './runner.js';
 * @property { { width: number, height: number } } viewport
 * @property { boolean } titleBasedScreenshots
 * @property { number } parallelTests
+* @property { number } retryTests
 * @property { number } defaultTimeout
 * @property { number } tolerance
 * @property { number } antialiasingTolerance
@@ -114,6 +115,7 @@ async function readConfig()
       },
       titleBasedScreenshots: false,
       parallelTests: 3,
+      retryTests: 1,
       defaultTimeout: 25000,
       tolerance: 2.5,
       antialiasingTolerance: 3.5,
@@ -197,6 +199,7 @@ async function main()
     console.log();
 
     console.log(c.bold.cyan('--parallel, -p'), '   [number]   Control how many tests should be allowed to run at the same time.');
+    console.log(c.bold.cyan('--retries, -r'), '    [number]   Retry any failing test a number of times before giving up.');
     console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end (experimental).');
   }
   // opens might-ui (even if not installed because npx is cool)
@@ -268,6 +271,8 @@ async function run(map, config)
 
   const parallel = argv.parallel ?? argv.p;
 
+  const retries = argv.retries ?? argv.r;
+
   const updateFailed = update && !target;
   const updateAll = update && target;
 
@@ -305,6 +310,7 @@ async function run(map, config)
     target,
     update,
     parallel: parallel ?? config.parallelTests,
+    retries: retries ?? config.retryTests,
     coverage,
     clean,
     screenshotsDir: resolve('__might__'),
