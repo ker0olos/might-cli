@@ -6,8 +6,6 @@ import { keyDefinitions } from 'puppeteer/lib/cjs/puppeteer/common/USKeyboardLay
 
 import limit from 'p-limit';
 
-import looksSame from 'looks-same';
-
 import sanitize from 'sanitize-filename';
 
 import md5 from 'md5';
@@ -19,6 +17,8 @@ import { pathExists, readFile, ensureDir, emptyDir, readdir, unlink } from 'fs-e
 import { stepsToString } from 'might-core';
 
 import screenshot from './screenshot.js';
+
+import { difference } from './diff.js';
 
 import { coverage } from './coverage.js';
 
@@ -111,69 +111,6 @@ function retry(fn, delay, maxTime)
     };
 
     call().catch(fail);
-  });
-}
-
-
-/**
-* @param { Buffer } img1
-* @param { Buffer } img2
-* @param { number } tolerance
-* @param { number } antialiasingTolerance
-* @returns { Promise<{ same: boolean, differences: number, diffImage: Buffer }> }
-*/
-function difference(img1, img2, tolerance, antialiasingTolerance)
-{
-  const opts = {
-    strict: false,
-    tolerance,
-
-    ignoreCaret: true,
-    ignoreAntialiasing: true,
-    antialiasingTolerance
-  };
-
-  return new Promise((resolve, reject) =>
-  {
-    looksSame(img1, img2, opts, (err, result) =>
-    {
-      if (err)
-      {
-        reject(err);
-
-        return;
-      }
-
-      if (!result.equal)
-      {
-        looksSame.createDiff({
-          reference: img1,
-          current: img2,
-          highlightColor: '#FF00FF',
-          ...opts
-        }, (err, buffer) =>
-        {
-          if (err)
-          {
-            reject(err);
-    
-            return;
-          }
-
-          resolve({
-            same: false,
-            differences: result.diffClusters.length,
-            diffImage: buffer
-          });
-        });
-      }
-      else
-      {
-        resolve({
-          same: true
-        });
-      }
-    });
   });
 }
 
@@ -445,8 +382,7 @@ export async function runner(options, callback)
           }
 
           const diff = await difference(
-            await img1.getBufferAsync(jimp.MIME_PNG),
-            await img2.getBufferAsync(jimp.MIME_PNG),
+            img1, img2,
             options.tolerance,
             options.antialiasingTolerance
           );
@@ -459,7 +395,7 @@ export async function runner(options, callback)
             {
               throw new MismatchError(
                 `Error: Found ${diff.differences} differences in the screenshots`,
-                diff.diffImage
+                await diff.diffImage
               );
             }
             else
