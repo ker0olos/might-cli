@@ -70,7 +70,7 @@ export async function difference(reference, current, tolerance, antialiasingTole
 /**
 * @param { jimp } reference
 * @param { jimp } current
-* @param { Buffer } diff
+* @param { Promise<Buffer> } diff
 */
 async function detailedDifference(reference, current, diffBuffer)
 {
@@ -95,5 +95,5 @@ async function detailedDifference(reference, current, diffBuffer)
   
   final.composite(diff, width + margin, height + margin);
 
-  return await final.getBufferAsync(jimp.MIME_PNG);
+  return final.getBufferAsync(jimp.MIME_PNG);
 }

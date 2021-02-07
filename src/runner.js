@@ -394,7 +394,7 @@ export async function runner(options, callback)
             if (retries === options.retries)
             {
               throw new MismatchError(
-                `Error: Found ${diff.differences} differences in the screenshots`,
+                `Error: Found ${diff.differences} difference`,
                 await diff.diffImage
               );
             }
