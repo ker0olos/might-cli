@@ -1,11 +1,11 @@
 import psTree from 'ps-tree';
 
-function kill(pid)
+function kill(pid: number | string)
 {
-  return new Promise((resolve, reject) =>
+  return new Promise<void>((resolve, reject) =>
   {
     // search for any grandchildren
-    psTree(pid, (err, children) =>
+    psTree(pid, (err: unknown, children: { PID: number }[]) =>
     {
       if (err)
         reject(err);
@@ -14,7 +14,7 @@ function kill(pid)
       children?.forEach(({ PID }) => process.kill(PID, 'SIGINT'));
 
       // kill the original child
-      process.kill(pid, 'SIGINT');
+      process.kill(pid as number, 'SIGINT');
 
       resolve();
     });

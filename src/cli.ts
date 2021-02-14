@@ -19,48 +19,42 @@ import { spawn } from 'child_process';
 
 import exit from 'exit';
 
+import { stepsToString } from 'might-core';
+
 import { runner } from './runner.js';
 
-/**
-* @typedef { object } Config
-* @property { string } startCommand
-* @property { string } url
-* @property { { width: number, height: number } } viewport
-* @property { boolean } titleBasedScreenshots
-* @property { number } parallelTests
-* @property { number } retryTests
-* @property { number } defaultTimeout
-* @property { number } tolerance
-* @property { number } antialiasingTolerance
-* @property { string[] } coverageExclude
-* @property { import('./coverage').CoverageIgnore } coverageIgnoreLines
-*/
+type Map = import('./runner.js').Map;
 
-/** the start command process
-* @type { import('child_process').ChildProcessWithoutNullStreams }
-*/
-let running;
+type Config = {
+  startCommand: string,
+  url: string,
+  targets: string[],
+  viewport: {
+    width: number,
+    height: number
+  },
+  titleBasedScreenshots: boolean,
+  parallelTests: number,
+  defaultTimeout: number,
+  tolerance: number,
+  antialiasingTolerance: number,
+  coverageExclude: string[]
+}
+
+declare global {
+  interface Console {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    draft(...data: any[]): Console['draft']
+  }
+}
+
+let running: import('child_process').ChildProcessWithoutNullStreams;
 
 const quiet = isCI;
 
-function resolve(...args)
+async function readConfig(): Promise<Config>
 {
-  return join(process.cwd(), ...args);
-}
-
-function roundTime(end, start)
-{
-  const num = (end - start) / 1000;
-
-  return Math.round((num + Number.EPSILON) * 100) / 100;
-}
-
-/** read the config file from disk
-* @returns { Promise<Config> }
-*/
-async function readConfig()
-{
-  let config;
+  let config: Config;
 
   try
   {
@@ -70,7 +64,7 @@ async function readConfig()
   {
     if (quiet)
       return;
-      
+
     console.log(c.bold.yellow('? Config is missing or corrupted.'));
 
     const newConfig = await prompts({
@@ -81,10 +75,10 @@ async function readConfig()
       active: 'yes',
       inactive: 'no'
     });
-    
+
     if (!newConfig.value)
       return;
-      
+
     console.log('\n? (e.g. npm run start) [Leave empty if none is needed].');
 
     const startCommand = await prompts({
@@ -109,13 +103,13 @@ async function readConfig()
     config = {
       startCommand: startCommand.value || null,
       url: url.value,
+      targets: [ 'chromium', 'firefox', 'webkit' ],
       viewport: {
         width: null,
         height: null
       },
       titleBasedScreenshots: false,
       parallelTests: 3,
-      retryTests: 1,
       defaultTimeout: 25000,
       tolerance: 2.5,
       antialiasingTolerance: 3.5,
@@ -125,21 +119,7 @@ async function readConfig()
         '/webpack/**',
         '/\'(\'webpack\')\'/**',
         '/\'(\'webpack\')\'-dev-server/**'
-      ],
-      coverageIgnoreLines: {
-        equal: [
-          '', '{', '}',
-          '};', '})', '});',
-          ']', '];', 'else',
-          '*/'
-        ],
-        startsWith: [ '//', '*', '/**' ],
-        endsWith: [ ],
-        startsEndsWith: [
-          [ '</', '>' ],
-          [ '</', '>;' ]
-        ]
-      }
+      ]
     };
 
     await writeJSON(resolve('might.config.json'), config, { spaces: 2 });
@@ -150,11 +130,7 @@ async function readConfig()
   }
 }
 
-/** read the map file from disk
-* @param { boolean } dialog
-* @returns { Promise<import('./runner.js').Map> }
-*/
-async function readMap(dialog)
+async function readMap(dialog: boolean): Promise<Map>
 {
   let map = [];
 
@@ -189,6 +165,7 @@ async function main()
   {
     console.log(c.bold.cyan('--help, -h'), '       Opens this help menu.');
     console.log(c.bold.cyan('--map, -m'), '        Opens Might UI (even if not installed).');
+    console.log(c.bold.cyan('--print'), '          Prints all the targeted.');
 
     console.log();
 
@@ -199,8 +176,7 @@ async function main()
     console.log();
 
     console.log(c.bold.cyan('--parallel, -p'), '   [number]   Control how many tests should be allowed to run at the same time.');
-    console.log(c.bold.cyan('--retries, -r'), '    [number]   Retry any failing test a number of times before giving up.');
-    console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end (experimental).');
+    console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end.');
   }
   // opens might-ui (even if not installed because npx is cool)
   else if (argv.map || argv.m)
@@ -217,7 +193,7 @@ async function main()
   // display version number
   else if (argv.version || argv.v)
   {
-    const json = require('../package.json');
+    const json = await readJSON(join(__dirname, '../package.json'));
 
     console.log(`v${json.version}`);
   }
@@ -233,6 +209,17 @@ async function main()
     if (!config)
       throw new Error('Error: Unable to load config file');
 
+    // make sure that at least there's one supported browser included in targets
+    if (
+      !Array.isArray(config.targets) ||
+      !config.targets.some(t => [ 'chromium', 'firefox', 'webkit' ].includes(t))
+    )
+    {
+      console.log(c.red('Error: Invalid config'));
+
+      throw new Error(`${c.bold('Incorrect "targets":')} the supported browsers are [ "chromium", "firefox", "webkit" ]`);
+    }
+
     // spawn the start command
     if (typeof config.startCommand === 'string' && config.startCommand.length)
       start(config.startCommand);
@@ -244,20 +231,10 @@ async function main()
   }
 }
 
-/** spawn the start command
-* @param { string } command
-*/
-function start(command)
-{
-  running = spawn(command, { shell: true, cwd: process.cwd() });
-}
-
 /** run the tests and output their progress and outcome
 * to the terminal
-* @param { import('./runner.js').Map } map
-* @param { Config } config
 */
-async function run(map, config)
+async function run(map: Map, config: Config)
 {
   const argv = minimist(process.argv.slice(2));
 
@@ -271,8 +248,6 @@ async function run(map, config)
 
   const parallel = argv.parallel ?? argv.p;
 
-  const retries = argv.retries ?? argv.r;
-
   const updateFailed = update && !target;
   const updateAll = update && target;
 
@@ -281,7 +256,7 @@ async function run(map, config)
   {
     // split by commas but allow commas to be escaped
     target = target.match(/(?:\\,|[^,])+/g).map((t) => t.trim());
-    
+
     if (target.length <= 0)
       target = undefined;
   }
@@ -290,12 +265,30 @@ async function run(map, config)
     target = undefined;
   }
 
+  if (argv.print)
+  {
+    map
+      .filter(t => !target || (target as string[]).includes(t.title))
+      .forEach((test, i) =>
+      {
+        if (i > 0)
+          console.log();
+
+        console.log(c.bold(`${test.title ?? 'Untitled'}:`), stepsToString(test.steps, {
+          pretty: true,
+          url: config.url
+        }).trim());
+      });
+
+    return;
+  }
+
   // hide cursor
   hideCursor();
 
   // let length = 0;
-  let draft;
-  
+  let draft: (s?: string) => void | undefined;
+
   const animation = [ '|', '/', '-', '\\' ];
 
   const running = {};
@@ -308,9 +301,9 @@ async function run(map, config)
     },
     map,
     target,
+    browsers: config.targets,
     update,
     parallel: parallel ?? config.parallelTests,
-    retries: retries ?? config.retryTests,
     coverage,
     clean,
     screenshotsDir: resolve('__might__'),
@@ -319,8 +312,7 @@ async function run(map, config)
     stepTimeout: config.defaultTimeout,
     tolerance: config.tolerance,
     antialiasingTolerance: config.antialiasingTolerance,
-    coverageExclude: config.coverageExclude,
-    coverageIgnoreLines: config.coverageIgnoreLines
+    coverageExclude: config.coverageExclude
   },
   (type, value) =>
   {
@@ -331,7 +323,7 @@ async function run(map, config)
     // an error occurred during a test
     if (type === 'error')
     {
-      let error;
+      let error: Error;
 
       // if there's a property called diff that means that it's a mismatch error
       if (value.diff)
@@ -383,18 +375,13 @@ async function run(map, config)
 
         // draft is used to show info before summary is printed
         // when summary is printed it show replace whatever what shown in that spot
-        let log = draft;
 
         // use a normal log if no info was being shown
-        if (!log)
-        {
+        if (!draft)
           console.log();
 
-          log = console.log;
-        }
+        (draft ?? console.log)(`Summary:${updateNotice} ${passed}${updated}${failed}${skipped}${total}.`);
 
-        log(`Summary:${updateNotice} ${passed}${updated}${failed}${skipped}${total}.`);
-        
         if (!target && value.unused.length)
         {
           const plural = value.unused.length > 1 ?  'screenshots' : 'screenshot';
@@ -428,15 +415,15 @@ async function run(map, config)
           running[value.id].interval = setInterval(() =>
           {
             const { timestamp, frame } = running[value.id];
-  
+
             const time = roundTime(Date.now(), timestamp);
-  
+
             // upgrade the animation to the next frame
             if (frame >= 3)
               running[value.id].frame = 0;
             else
               running[value.id].frame = frame + 1;
-  
+
             // show that a test is taking too much time (over 15 seconds)
             if (time >= 15)
               draft(c.bold.blueBright('RUNNING'), c.bold.red(`(${time}s)`), value.title);
@@ -494,7 +481,7 @@ async function run(map, config)
 
         if (value.report >= 70)
           color = c.yellow;
-        
+
         if (value.report >= 90)
           color = c.green;
 
@@ -504,13 +491,35 @@ async function run(map, config)
   });
 }
 
+
+/** resolves a path using the current working directory
+*/
+const resolve = (...args: string[]) => join(process.cwd(), ...args);
+
+/** spawns the start command
+*/
+function start(command: string)
+{
+  running = spawn(command, { shell: true, cwd: process.cwd() });
+}
+
+function roundTime(end: number, start: number)
+{
+  const num = (end - start) / 1000;
+
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
+/** kill the the start process if it's running
+*/
 function kill()
 {
-  // since the app can't run async code will running we spawn a process
-  // that will be kill any running children then exits automatically
+  // since the app can't run async code while dying
+  // we spawn a new process
+  // that will kill any running children then exits automatically
 
   if (running)
-    spawn(process.argv[0], [ join(__dirname, 'kill.js'), running.pid ]);
+    spawn(process.argv[0], [ join(__dirname, 'kill.js'), running.pid.toString() ]);
 }
 
 function showCursor()

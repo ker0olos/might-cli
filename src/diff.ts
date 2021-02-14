@@ -2,14 +2,7 @@ import jimp from 'jimp';
 
 import looksSame from 'looks-same';
 
-/**
-* @param { jimp } reference
-* @param { jimp } current
-* @param { number } tolerance
-* @param { number } antialiasingTolerance
-* @returns { Promise<{ same: boolean, differences: number, diffImage: Promise<Buffer> }> }
-*/
-export async function difference(reference, current, tolerance, antialiasingTolerance)
+export async function difference(reference: jimp, current: jimp, tolerance: number, antialiasingTolerance: number): Promise<{ same: boolean, differences?: number, diffImage?: Promise<Buffer> }>
 {
   const opts = {
     tolerance,
@@ -67,12 +60,7 @@ export async function difference(reference, current, tolerance, antialiasingTole
   });
 }
 
-/**
-* @param { jimp } reference
-* @param { jimp } current
-* @param { Promise<Buffer> } diff
-*/
-async function detailedDifference(reference, current, diffBuffer)
+async function detailedDifference(reference: jimp, current: jimp, diffBuffer: Buffer)
 {
   const width = reference.getWidth();
   const height = reference.getHeight();

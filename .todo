@@ -1,14 +1,25 @@
 Performance Issues and Bugs:
-  - drag and swipe use mouse events even if the viewport is touch-enabled.
-     - puppeteer does not support touch events at least none that I know of.
+  ✔ test coverage @done(21-02-14 04:53)
+
+  ☐ release might-gui with the wiki updates
+    ☐ release a pre-release of might-cli@2 for testing
 
 Documentation:
 
 Map:
 
 Runner:
+  - drag and swipe uses mouse events even if the viewport is touch-enabled.
+     - playwright does not support touch events other than tap.
+  
+  - playwright does not support emulating media 'prefers-reduced-motion'
 
 Coverage:
-  ☐ improve statement maps @low
 
 CLI:
+  ✔ refactor collecting coverage with playwright @done(21-02-14 19:33)
+
+  ☐ add support to testing with the other 2 browsers
+    ☐ use a browser suffix after the test title and mime type of the screenshots
+    ☐ add a warning to cli if coverage is triggered without chromium as a target
+  

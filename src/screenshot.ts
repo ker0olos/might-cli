@@ -1,5 +1,3 @@
-/* eslint-disable no-undef */
-
 // this implementation is originally from puppeteer-full-page-screenshot
 // https://github.com/morteza-fsh/puppeteer-full-page-screenshot/blob/6fcb7afabd185b670649666c7c065a440f5273f0/src/index.js
 
@@ -7,16 +5,13 @@ import jimp from 'jimp';
 
 import { promisify } from 'util';
 
-/**
-* @param { import('puppeteer').Page } page
-*/
-const pageDown = async(page) =>
+const pageDown = async(page: import('playwright').Page) =>
 {
   await page.evaluate(() => window.scrollBy(0, window.innerHeight));
 };
 
 // /**
-// * @param { import('puppeteer').Page } page
+// * @param { import('playwright').Page } page
 // */
 // const removeFixedSticky = async(page) =>
 // {
@@ -35,16 +30,13 @@ const pageDown = async(page) =>
 //   });
 // };
 
-/**
-* @param { Buffer[] } images
-*/
-const merge = async(images) =>
+const merge = async(images: Buffer[]) =>
 {
   const color = 0x00000000;
 
   let width = 0, height = 0;
 
-  const processImg = async(img) =>
+  const processImg = async(img: Buffer) =>
   {
     const j = await jimp.read(img);
 
@@ -80,10 +72,7 @@ const merge = async(images) =>
   return reducedImage;
 };
 
-/**
-* @param { { page: import('puppeteer').Page, path: string, full: boolean } } options
-*/
-export default async(options) =>
+export default async(options: { page?: import('playwright').Page, path?: string, full?: boolean }): Promise<Buffer | undefined> =>
 {
   options = options || {};
 
@@ -99,7 +88,7 @@ export default async(options) =>
     });
   }
 
-  // puppeteer appears to have an issue with full-page screenshots
+  // chromium appears to have an issue with full-page screenshots
   // on some web apps including one of ours (possibly due to the use of the viewport units)
   // so we're going to be using this workaround of the foreseeable future
 
@@ -122,10 +111,7 @@ export default async(options) =>
     });
   }
 
-  /**
-  * @type { Buffer[] }
-  */
-  const images = [];
+  const images: Buffer[] = [];
 
   for (let i = 0; i < pagesCount; i++)
   {

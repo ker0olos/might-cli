@@ -1,8 +1,6 @@
 import jimp from 'jimp';
 
-import puppeteer from 'puppeteer';
-
-import { keyDefinitions } from 'puppeteer/lib/cjs/puppeteer/common/USKeyboardLayout.js';
+import playwright from 'playwright';
 
 import limit from 'p-limit';
 
@@ -22,69 +20,55 @@ import { difference } from './diff.js';
 
 import { coverage } from './coverage.js';
 
-/**
-* @typedef { Test[] } Map
-*/
+type Step = import('might-core').Step;
 
-/**
-* @typedef { import('might-core').Step } Step
-*/
+export type Map = Test[];
 
-/**
-* @typedef { object } Test
-* @property { string } title
-* @property { Step[] } steps
-*/
+type Test = {
+  title: string,
+  steps: Step[]
+};
 
-/**
-* @typedef { object } Options
-* @property { string } url
-* @property { { width: number, height: number } } viewport
-* @property { Map } map
-* @property { string[] } target
-* @property { boolean } update
-* @property { number } parallel
-* @property { number } retries
-* @property { boolean } coverage
-* @property { boolean } clean
-* @property { string } screenshotsDir
-* @property { string } coverageDir
-* @property { boolean } titleBasedScreenshots
-* @property { number } stepTimeout
-* @property { number } tolerance
-* @property { number } antialiasingTolerance
-* @property { string[] } coverageExclude
-* @property { import('./coverage').CoverageIgnore } coverageIgnoreLines
-*/
+type Options = {
+  url: string,
+  viewport?: {
+    width?: number,
+    height?: number
+  },
+  map?: Map,
+  target?: string[],
+  browsers?: string[],
+  update?: boolean,
+  parallel?: number,
+  coverage?: boolean,
+  clean?: boolean,
+  screenshotsDir?: string,
+  coverageDir?: string,
+  titleBasedScreenshots?: boolean,
+  stepTimeout?: number,
+  tolerance?: number,
+  antialiasingTolerance?: number,
+  coverageExclude?: string[]
+};
 
 class MismatchError extends Error
 {
-  /**
-  * @param { string } message
-  * @param { Buffer } diff
-  */
-  constructor(message, diff)
+  constructor(message: string, diff: Buffer)
   {
     super(message);
 
     this.diff = diff;
   }
+
+  diff: Buffer
 }
 
-/**
-* @param { number } seconds
-*/
-function wait(seconds)
+function wait(seconds: number)
 {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 
-/**
-* @param { () => Promise<any> } fn
-* @param { number } delay
-* @param { number } maxTime
- */
-function retry(fn, delay, maxTime)
+function retry(fn: () => Promise<unknown>, delay: number, maxTime: number)
 {
   return new Promise((resolve, reject) =>
   {
@@ -92,7 +76,7 @@ function retry(fn, delay, maxTime)
 
     const timeoutRef = setTimeout(() => timeout = true, maxTime);
 
-    const r = (e) =>
+    const r = (e: unknown) =>
     {
       if (timeoutRef)
         clearTimeout(timeoutRef);
@@ -102,10 +86,10 @@ function retry(fn, delay, maxTime)
 
     const call = () => fn().then(r);
 
-    const fail = (e) =>
+    const fail = (err: Error) =>
     {
       if (timeout)
-        reject(e);
+        reject(err);
       else
         setTimeout(() => call().catch(fail), delay);
     };
@@ -114,13 +98,11 @@ function retry(fn, delay, maxTime)
   });
 }
 
-/**
-*
-* @param { Options } options
-* @param { (type: 'started' | 'progress' | 'error' | 'done', value: any) => void } callback
-*/
-export async function runner(options, callback)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function runner(options: Options, callback: (type: 'started' | 'coverage' | 'progress' | 'error' | 'done', value: any) => void): Promise<void>
 {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //@ts-ignore
   options = options || {};
 
   options.viewport = (typeof options.viewport !== 'object') ? {} : options.viewport;
@@ -133,20 +115,11 @@ export async function runner(options, callback)
   options.stepTimeout = (typeof options.stepTimeout !== 'number') ? 25000 : (options.stepTimeout || 25000);
 
   options.parallel = (typeof options.parallel !== 'number') ? 3 : (options.parallel || 3);
-  options.retries = (typeof options.retries !== 'number') ? 1 : (options.retries || 1);
 
   options.tolerance = (typeof options.tolerance !== 'number') ? 2.5 : (options.tolerance || 2.5);
   options.antialiasingTolerance = (typeof options.antialiasingTolerance !== 'number') ? 3.5 : (options.antialiasingTolerance || 3.5);
   
   options.coverageExclude = (!Array.isArray(options.coverageExclude)) ? [] : options.coverageExclude;
-
-  options.coverageIgnoreLines = (typeof options.coverageIgnoreLines !== 'object') ? {} : options.coverageIgnoreLines;
-
-  options.coverageIgnoreLines.equal = (!Array.isArray(options.coverageIgnoreLines.equal)) ? [] : options.coverageIgnoreLines.equal;
-  options.coverageIgnoreLines.startsWith = (!Array.isArray(options.coverageIgnoreLines.startsWith)) ? [] : options.coverageIgnoreLines.startsWith;
-  options.coverageIgnoreLines.endsWith = (!Array.isArray(options.coverageIgnoreLines.endsWith)) ? [] : options.coverageIgnoreLines.endsWith;
-  
-  options.coverageIgnoreLines.startsEndsWith = (!Array.isArray(options.coverageIgnoreLines.startsEndsWith)) ? [] : options.coverageIgnoreLines.startsEndsWith;
 
   let map = options.map;
 
@@ -165,7 +138,7 @@ export async function runner(options, callback)
   let updated = 0;
   let failed = 0;
 
-  const coverageCollection = [];
+  const coverageCollection: import('./coverage.js').CoverageEntry[] = [];
 
   // skipping broken tests
   // and filtering targets
@@ -213,17 +186,9 @@ export async function runner(options, callback)
         screenshots[join(options.screenshotsDir, p)] = true;
     });
 
-  // launch puppeteer
-  const browser = await puppeteer.launch({
+  // launch chromium
+  const browser = await playwright.chromium.launch({
     timeout: 15000,
-    defaultViewport: {
-      width: options.viewport.width,
-      height: options.viewport.height,
-      hasTouch: false,
-      isMobile: false,
-      isLandscape: false,
-      deviceScaleFactor: 1
-    },
     // disable-web-security is used because of CORS rejections
     args: [
       '--no-sandbox',
@@ -235,15 +200,8 @@ export async function runner(options, callback)
   // announce the amount of tests that are pending
   callback('started', map.length);
 
-  /**
-  * @param { Test } test
-  * @param { number } id
-  * @param { number } rIndex
-  */
-  const runTest = async(test, id, rIndex) =>
+  const runTest = async(browser: playwright.Browser, test: Test, id: number) =>
   {
-    const retries = rIndex ?? 1;
-
     const title = test.title || stepsToString(test.steps, {
       pretty: true,
       url: options.url
@@ -251,9 +209,9 @@ export async function runner(options, callback)
 
     try
     {
-      let selector;
+      let selector: string;
       
-      let fullscreen = false;
+      let touch = false, full = false;
 
       callback('progress', {
         id,
@@ -261,48 +219,107 @@ export async function runner(options, callback)
         state: 'running'
       });
 
-      const context = await browser.createIncognitoBrowserContext();
+      let page: playwright.Page;
 
-      const page = await context.newPage();
-
-      // start collecting coverage
-      if (options.coverage)
+      // this will result in the page reloading (closing all previous steps and coverage)
+      const updateContext = async(contextOptions?: playwright.BrowserContextOptions) =>
       {
-        await Promise.all([
-          page.coverage.startJSCoverage(),
-          page.coverage.startCSSCoverage()
-        ]);
-      }
+        // clean up old page
 
-      // an attempt to make tests more consistent
-      // through different machines
-      // works with anything that doesn't work too hard to track your location (google)
-      await page.setExtraHTTPHeaders({
-        'X-Forwarded-For': '8.8.8.8',
-        'Accept-Language': 'en-US,en;q=0.5'
-      });
+        if (page)
+        {
+          await page.context().close();
+          await page.close();
+        }
 
-      // go to the web app's url (retry enabled)
-      await retry(
-        () => page.goto(options.url, { timeout: options.stepTimeout }),
-        1000,
-        options.stepTimeout
-      );
+        // create new page
+
+        const context = await browser.newContext({
+          colorScheme: 'light',
+          hasTouch: touch,
+          viewport: {
+            width: options.viewport.width,
+            height: options.viewport.height
+          },
+          
+          ...contextOptions,
+
+          locale: 'en-US',
+          timezoneId: 'America/Los_Angeles'
+        });
+        
+        page = await context.newPage();
+        
+        // start collecting coverage
+        if (options.coverage)
+          await page.coverage.startJSCoverage();
+
+        // an easy attempt to make tests more consistent
+        // through different machines
+        // works with anything that doesn't work too hard to track your location (google)
+        await page.setExtraHTTPHeaders({
+          'X-Forwarded-For': '8.8.8.8',
+          'Accept-Language': 'en-US,en;q=0.5'
+        });
+
+        // go to the web app's url (retry enabled)
+        await retry(
+          () => page.goto(options.url, { timeout: options.stepTimeout }),
+          1000,
+          options.stepTimeout
+        );
+      };
+
+      await updateContext();
 
       // run the steps
       for (const step of test.steps)
       {
-        const returnValue = await runStep(page, selector, step, options);
-
+        const returnValue = await runStep(page, selector, step, touch, options);
+  
         if (step.action === 'viewport')
-          fullscreen = returnValue;
+        {
+          const { width, height }: {
+            width: number,
+            height: number,
+            touch: boolean,
+            full: boolean
+          } = returnValue;
+
+          if (typeof returnValue.full === 'boolean' && returnValue.full !== full)
+            full = returnValue.full;
+
+          // update context
+          if (typeof returnValue.touch === 'boolean' && returnValue.touch !== touch)
+          {
+            touch = returnValue.touch;
+
+            await updateContext({
+              viewport: {
+                width: width ?? options.viewport.width,
+                height: height ?? options.viewport.height
+              }
+            });
+          }
+          // update just the viewport
+          else
+          {
+            await page.setViewportSize({
+              width: width ?? options.viewport.width,
+              height: height ?? options.viewport.height
+            });
+          }
+        }
         else
+        {
+          // set new selector if any
           selector = returnValue ?? selector;
+        }
       }
 
       // all steps were executed
 
-      let screenshotId;
+      let screenshotId: string;
 
       // if enabled then screenshots names are based on the test's title
       // if 2 or more tests have the same title they will have the same screenshot
@@ -328,12 +345,12 @@ export async function runner(options, callback)
       const screenshotExists = await pathExists(screenshotPath);
 
       // new first-run test or a forced update
-      const update = async(force) =>
+      const update = async(force?: boolean) =>
       {
         // take a new screenshot and save it to disk
         await screenshot({
+          full,
           page,
-          full: fullscreen,
           path: screenshotPath
         });
 
@@ -365,20 +382,19 @@ export async function runner(options, callback)
         {
           // compare the new screenshot
           const img1 = await jimp.read(await screenshot({
-            page,
-            full: fullscreen
+            full,
+            page
           }));
 
           // with the old screenshot
           const img2 = await jimp.read(await readFile(screenshotPath));
 
-          if (img1.getWidth() !== img2.getWidth() ||
-            img1.getHeight() !== img2.getHeight())
+          const [ x1, y1 ] = [ img1.getWidth(), img1.getHeight() ];
+          const [ x2, y2 ] = [ img2.getWidth(), img2.getHeight() ];
+
+          if (x1 !== x2 || y1 !== y2)
           {
-            if (retries === options.retries)
-              throw new Error('Error: Screenshots have different sizes');
-            else
-              await runTest(test, id, retries + 1);
+            throw new Error(`Error: Screenshots have different sizes (${x2}x${y2}) (${x1}x${y1})`);
           }
 
           const diff = await difference(
@@ -391,17 +407,10 @@ export async function runner(options, callback)
           {
             // throw error if they don't match each other
 
-            if (retries === options.retries)
-            {
-              throw new MismatchError(
-                `Error: Found ${diff.differences} difference`,
-                await diff.diffImage
-              );
-            }
-            else
-            {
-              await runTest(test, id, retries + 1);
-            }
+            throw new MismatchError(
+              `Error: Found ${diff.differences} difference`,
+              await diff.diffImage
+            );
           }
           else
           {
@@ -436,23 +445,15 @@ export async function runner(options, callback)
       // stop collecting coverage
       if (options.coverage)
       {
-        const [ jsCoverage, cssCoverage ] = await Promise.all([
-          page.coverage.stopJSCoverage(),
-          page.coverage.stopCSSCoverage()
-        ]);
-
-        coverageCollection.push({
-          url: page.url(),
-          js: jsCoverage,
-          css: cssCoverage
-        });
+        const coverage = await page.coverage.stopJSCoverage();
+        
+        coverageCollection.push(...coverage);
       }
 
-      // close the page
+      // close the page and context
       
+      await page.context().close();
       await page.close();
-      
-      await context.close();
     }
     catch (e)
     {
@@ -472,10 +473,10 @@ export async function runner(options, callback)
 
   // run tests in parallel
   await Promise.all(
-    map.map(((t, id) => parallel(() => runTest(t, id))))
+    map.map(((t, id) => parallel(() => runTest(browser, t, id))))
   );
 
-  // close puppeteer
+  // close browser
   await browser.close();
 
   // process the coverage of all the tests
@@ -485,13 +486,11 @@ export async function runner(options, callback)
       state: 'running'
     });
 
-    const sourceDir = join(options.coverageDir, '__tmp__');
-
     // empties and ensures that the coverage directories exists
     await emptyDir(options.coverageDir);
   
-    // handle the coverage data returned by puppeteer
-    const report = await coverage(coverageCollection, options.coverageDir, sourceDir, options.coverageExclude, options.coverageIgnoreLines);
+    //  handle the coverage data returned by playwright
+    const report = await coverage(coverageCollection, options.coverageDir, options.coverageExclude);
 
     callback('coverage', {
       state: 'done',
@@ -524,13 +523,7 @@ export async function runner(options, callback)
   });
 }
 
-/**
-* @param { puppeteer.Page } page
-* @param { string } selector
-* @param { Step } step
-* @param { Options } options
-*/
-async function runStep(page, selector, step, options)
+async function runStep(page: playwright.Page, selector: string, step: Step, touchEvents: boolean, options: Options)
 {
   if (step.action === 'wait')
   {
@@ -554,13 +547,13 @@ async function runStep(page, selector, step, options)
   {
     const value = step.value;
     
-    const current = page.viewport();
+    const current = page.viewportSize();
     
     let width = current.width;
     let height = current.height;
 
     let touch = false;
-    let fullscreen = false;
+    let full = false;
 
     if (value.includes('x'))
     {
@@ -579,18 +572,14 @@ async function runStep(page, selector, step, options)
       touch = true;
 
     if (value.includes('f'))
-      fullscreen = true;
+      full = true;
 
-    await page.setViewport({
+    return {
       width,
       height,
-      hasTouch: touch,
-      isMobile: false,
-      isLandscape: false,
-      deviceScaleFactor: 1
-    });
-
-    return fullscreen;
+      touch,
+      full
+    };
   }
   else if (step.action === 'goto')
   {
@@ -622,10 +611,13 @@ async function runStep(page, selector, step, options)
   {
     const [ name, value ] = step.value.split(':');
 
-    await page.emulateMediaFeatures([ {
-      name: name.trim(),
-      value: value.trim()
-    } ]);
+    // TODO prefers-reduced-motion is not supported on playwright
+
+    if (name === 'prefers-color-scheme' && [ 'light', 'dark', 'no-preference' ].includes(value))
+    {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await page.emulateMedia({ colorScheme: (value as any) });
+    }
   }
   else if  (step.action === 'select')
   {
@@ -637,20 +629,18 @@ async function runStep(page, selector, step, options)
   }
   else if (step.action === 'click')
   {
-    const { hasTouch } = page.viewport();
-
     const elements = await page.$$(selector);
 
     for (const elem of elements)
     {
       if (step.value === 'right')
-        await elem.click({ button: 'right' });
+        await elem.click({ button: 'right', force: true, timeout: options.stepTimeout });
       else if (step.value === 'middle')
-        await elem.click({ button: 'middle' });
-      else if (hasTouch)
-        await elem.tap();
+        await elem.click({ button: 'middle', force: true, timeout: options.stepTimeout });
+      else if (touchEvents)
+        await elem.tap({ force: true, timeout: options.stepTimeout });
       else
-        await elem.click({ button: 'left' });
+        await elem.click({ button: 'left', force: true, timeout: options.stepTimeout });
     }
   }
   else if (step.action === 'drag')
@@ -664,7 +654,7 @@ async function runStep(page, selector, step, options)
 
     const boundingBox = await elem.boundingBox();
 
-    const { width, height } = page.viewport();
+    const { width, height } = page.viewportSize();
 
     const x0 = (boundingBox.x + boundingBox.width) * 0.5;
     const y0 = (boundingBox.y + boundingBox.height) * 0.5;
@@ -703,7 +693,7 @@ async function runStep(page, selector, step, options)
 
     let [ x0, y0, x1, y1 ] = step.value;
 
-    const { width, height } = page.viewport();
+    const { width, height } = page.viewportSize();
 
     // viewport unit (v) (relative to viewport height)
 
@@ -721,40 +711,28 @@ async function runStep(page, selector, step, options)
   }
   else if (step.action === 'keyboard')
   {
-    /**
-    * @type { string[] }
-    */
-    const split = step.value.replace('++', '+NumpadAdd').split('+');
+    const split: string[] = step.value.replace('++', '+NumpadAdd').split('+');
 
     const elem = await page.$(selector);
 
     // make sure the selected element is focused
     await elem.focus();
 
-    let shift = false, ctrl = false, alt = false;
+    const
+      shift = split.includes('Shift'),
+      ctrl = split.includes('Control'),
+      alt = split.includes('Alt');
 
     // hold modifier keys
 
-    if (split.includes('Shift'))
-    {
-      shift = true;
-
+    if (shift)
       await page.keyboard.down('Shift');
-    }
 
-    if (split.includes('Control'))
-    {
-      ctrl = true;
-         
+    if (ctrl)
       await page.keyboard.down('Control');
-    }
 
-    if (split.includes('Alt'))
-    {
-      alt = true;
-         
+    if (alt)
       await page.keyboard.down('Alt');
-    }
 
     // press all other keys
 
@@ -764,15 +742,7 @@ async function runStep(page, selector, step, options)
       const key = split[i];
 
       if (key !== 'Shift' && key !== 'Control' && key !== 'Alt')
-      {
-        // eslint-disable-next-line security/detect-object-injection
-        const code = keyDefinitions[key]?.code;
-
-        if (code)
-          await page.keyboard.press(code);
-        else
-          await page.keyboard.type(key);
-      }
+        await page.keyboard.press(key);
     }
 
     // release modifier keys
@@ -797,7 +767,8 @@ async function runStep(page, selector, step, options)
     for (const elem of elements)
     {
       // get in the new value
-      const current = await elem.evaluate((elem) => elem.value);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const current = await elem.evaluate((elem) => (elem as any).value);
 
       // focus on the input element
       await elem.focus();
