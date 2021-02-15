@@ -6,7 +6,7 @@ import { createContext } from 'istanbul-lib-report';
 
 import { createCoverageMap } from 'istanbul-lib-coverage';
 
-import type { FileCoverage, FileCoverageData,  } from 'istanbul-lib-coverage';
+import type { FileCoverage, FileCoverageData } from 'istanbul-lib-coverage';
 
 import reports from 'istanbul-reports';
 
@@ -83,7 +83,7 @@ export async function coverage(coverageCollection: CoverageEntry[], dir: string,
       }
 
       processed[entryPath] = v8toIstanbul('', 0, {
-        sourceMap: { sourcemap },
+        sourceMap: sourcemap ? { sourcemap } : undefined,
         source: entry.source
       });
 
@@ -99,9 +99,9 @@ export async function coverage(coverageCollection: CoverageEntry[], dir: string,
     Object.entries(data).forEach(([ key, file ]) =>
     {
       // match path with excluded globs
-      if (isMatch(key.replace('\\', ''), exclude, undefined))
+      if (!key.length || isMatch(key.replace('\\', ''), exclude, undefined))
         return;
-
+        
       // resolve path
       file.path = join(dir, key);
 

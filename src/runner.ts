@@ -186,38 +186,42 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         screenshots[join(options.screenshotsDir, p)] = true;
     });
 
-  // launch chromium
-  const browser = await playwright.chromium.launch({
-    timeout: 15000,
-    // disable-web-security is used because of CORS rejections
-    args: [
-      '--no-sandbox',
-      '--disable-web-security',
-      '--disable-setuid-sandbox'
-    ]
-  });
+  const targets = [ 'chromium', 'firefox', 'webkit' ]
+    .filter(b => options.browsers.includes(b));
+
+  const browsers = {
+    chromium: targets.includes('chromium') ?
+      await playwright.chromium.launch({
+        timeout: 15000,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          // because of CORS rejections
+          '--disable-web-security'
+        ]
+      }) : undefined,
+    
+    firefox: targets.includes('firefox') ?
+      await playwright.firefox.launch({
+        timeout: 15000
+      }) : undefined,
+    
+    webkit: targets.includes('webkit') ?
+      await playwright.webkit.launch({
+        timeout: 15000
+      }) : undefined
+  };
 
   // announce the amount of tests that are pending
   callback('started', map.length);
 
-  const runTest = async(browser: playwright.Browser, test: Test, id: number) =>
+  const runTest = async(browser: playwright.Browser, browserType: string, test: Test, displayName: string, screenshotId: string, callback: (type: 'progress' | 'error', args: unknown) => void) =>
   {
-    const title = test.title || stepsToString(test.steps, {
-      pretty: true,
-      url: options.url
-    }).trim();
-
     try
     {
       let selector: string;
-      
+        
       let touch = false, full = false;
-
-      callback('progress', {
-        id,
-        title,
-        state: 'running'
-      });
 
       let page: playwright.Page;
 
@@ -241,17 +245,17 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
             width: options.viewport.width,
             height: options.viewport.height
           },
-          
+            
           ...contextOptions,
 
           locale: 'en-US',
           timezoneId: 'America/Los_Angeles'
         });
-        
+          
         page = await context.newPage();
-        
+          
         // start collecting coverage
-        if (options.coverage)
+        if (options.coverage && browserType === 'chromium')
           await page.coverage.startJSCoverage();
 
         // an easy attempt to make tests more consistent
@@ -276,15 +280,15 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       for (const step of test.steps)
       {
         const returnValue = await runStep(page, selector, step, touch, options);
-  
+    
         if (step.action === 'viewport')
         {
           const { width, height }: {
-            width: number,
-            height: number,
-            touch: boolean,
-            full: boolean
-          } = returnValue;
+              width: number,
+              height: number,
+              touch: boolean,
+              full: boolean
+            } = returnValue;
 
           if (typeof returnValue.full === 'boolean' && returnValue.full !== full)
             full = returnValue.full;
@@ -319,28 +323,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       // all steps were executed
 
-      let screenshotId: string;
-
-      // if enabled then screenshots names are based on the test's title
-      // if 2 or more tests have the same title they will have the same screenshot
-      // and can cause tests to fail
-      if (options.titleBasedScreenshots)
-      {
-        if (test.title)
-          screenshotId = sanitize(test.title);
-        else
-          screenshotId = sanitize(stepsToString(test.steps, { pretty: true }));
-      }
-      // if not then screenshots names are based on the md5 sum of all the test's steps
-      // if 2 or more tests have the same exact steps they will have the same screenshot
-      // but same the series of steps should always result into the same screenshot
-      // each time they run
-      else
-      {
-        screenshotId = md5(stepsToString(test.steps));
-      }
-
-      const screenshotPath = join(options.screenshotsDir, `${screenshotId}.png`);
+      const screenshotPath = join(options.screenshotsDir, `${screenshotId}.${browserType}.png`);
 
       const screenshotExists = await pathExists(screenshotPath);
 
@@ -359,8 +342,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         screenshots[screenshotPath] = false;
 
         callback('progress', {
-          id,
-          title,
+          title: displayName,
           force: force,
           state: 'updated'
         });
@@ -419,8 +401,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
             screenshots[screenshotPath] = false;
 
             callback('progress', {
-              id,
-              title,
+              title: displayName,
               state: 'passed'
             });
 
@@ -443,15 +424,15 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       }
 
       // stop collecting coverage
-      if (options.coverage)
+      if (options.coverage && browserType === 'chromium')
       {
         const coverage = await page.coverage.stopJSCoverage();
-        
+          
         coverageCollection.push(...coverage);
       }
 
       // close the page and context
-      
+        
       await page.context().close();
       await page.close();
     }
@@ -460,24 +441,94 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       // test failed
 
       callback('progress', {
-        id,
-        title,
+        title: displayName,
         state: 'failed'
       });
 
       callback('error', e);
     }
   };
+
+  const prepTest = async(test: Test, id: number) =>
+  {
+    const displayName = test.title || stepsToString(test.steps, {
+      pretty: true,
+      url: options.url
+    }).trim();
+
+    const screenshotId =
+    // [this is the default method and also the fallback to title-based screenshots]
+    // if not then screenshots names are based on the md5 sum of all the test's steps
+    // if 2 or more tests have the same exact steps they will have the same screenshot,
+    // PROS: the same the series of steps should always result into the same screenshot
+    // each time they run
+    // PROS: any change in the test results in creating a new screenshot instead to needing to update them each time
+    // CONS: it makes it harder to view the results of tests on their initial run
+    (!options.titleBasedScreenshots || !test.title) ?
+      md5(stepsToString(test.steps)) :
+      // if enabled then screenshots names are based on the test's title
+      // if 2 or more tests have the same title they will have the same screenshot
+      // PROS: easier to view and compare
+      // CONS: needs to be update each time the test steps change
+      // CONS: will cause tests with duplicate titles to fail
+      sanitize(test.title);
+
+    const processes = [];
+
+    callback('progress', {
+      id,
+      title: displayName,
+      state: 'running'
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let callbackArgs: any;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const callbackWrapper = (type: 'progress' | 'error', args: any) =>
+    {
+      if (type === 'progress')
+      {
+        callbackArgs = {
+          id,
+          ...args
+        };
+      }
+      else
+      {
+        callback('progress', callbackArgs);
+        
+        callback('error', args);
+      }
+    };
+
+    for (const type of targets)
+    {
+      // eslint-disable-next-line security/detect-object-injection
+      const browser = browsers[type];
+
+      processes.push(runTest(browser, type, test, displayName, screenshotId, callbackWrapper));
+    }
+
+    // runs the test on all targets in parallel
+    await Promise.all(processes);
+
+    // release the real callback after
+    // all the browsers are finished
+    callback('progress', callbackArgs);
+  };
   
   const parallel = limit(options.parallel);
 
   // run tests in parallel
   await Promise.all(
-    map.map(((t, id) => parallel(() => runTest(browser, t, id))))
+    map.map(((t, index) => parallel(() => prepTest(t, index))))
   );
 
-  // close browser
-  await browser.close();
+  // close browsers
+  await Promise.all(targets
+    // eslint-disable-next-line security/detect-object-injection
+    .map(async(key) => await browsers[key].close()));
 
   // process the coverage of all the tests
   if (options.coverage)
@@ -499,8 +550,9 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   }
 
   // filter screenshots that were used to only get the unused ones
-  // eslint-disable-next-line security/detect-object-injection
-  const unused = Object.keys(screenshots).filter(key => screenshots[key] === true);
+  const unused = Object.keys(screenshots)
+    // eslint-disable-next-line security/detect-object-injection
+    .filter(key => screenshots[key] === true);
 
   // cleaning unused screenshots
   // screenshots are only cleaned if no tests were targeted
@@ -514,7 +566,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   }
 
   callback('done', {
-    total: map.length + skipped.length,
+    total: passed + updated + failed + skipped.length,
     unused,
     passed,
     updated,

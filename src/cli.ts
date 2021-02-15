@@ -175,6 +175,10 @@ async function main()
 
     console.log();
 
+    console.log(c.bold.cyan('--chromium\n--firefox'), '        Ignores the config and runs tests on the specified browser.', c.bold.cyan('\n--webkit'));
+
+    console.log();
+
     console.log(c.bold.cyan('--parallel, -p'), '   [number]   Control how many tests should be allowed to run at the same time.');
     console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end.');
   }
@@ -242,7 +246,7 @@ async function run(map: Map, config: Config)
 
   const update = argv.update || argv.u;
 
-  const coverage = argv.coverage || argv.c;
+  let coverage = argv.coverage || argv.c;
 
   let target = argv.target ?? argv.t;
 
@@ -281,6 +285,21 @@ async function run(map: Map, config: Config)
       });
 
     return;
+  }
+
+  if (argv.chromium)
+    config.targets = [ 'chromium' ];
+  else if (argv.firefox)
+    config.targets = [ 'firefox' ];
+  else if (argv.webkit)
+    config.targets = [ 'webkit' ];
+
+  // currently only chromium comes with built-in coverage support
+  if (coverage && !config.targets.includes('chromium'))
+  {
+    coverage = false;
+
+    console.log(c.bold.yellow('To enable coverage reports please add "chromium" to your targets.\n'));
   }
 
   // hide cursor
@@ -490,7 +509,6 @@ async function run(map: Map, config: Config)
     }
   });
 }
-
 
 /** resolves a path using the current working directory
 */
