@@ -497,7 +497,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         type === 'progress' &&
         // avoid outputting passed state
         // if a different test was updated
-        callbackArgs?.state !== 'updated'
+        (callbackArgs === undefined || args.state !== 'passed')
         // we don't have to worry about checking
         // arguments, since there's only 'force'
         // and it won't differ between each test
