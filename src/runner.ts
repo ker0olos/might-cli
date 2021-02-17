@@ -487,18 +487,26 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const callbackWrapper = (type: 'progress' | 'error', args: any) =>
     {
-      if (type === 'progress')
+      if (type === 'error')
+      {
+        callback('progress', callbackArgs);
+        
+        callback('error', args);
+      }
+      else if (
+        type === 'progress' &&
+        // avoid outputting passed state
+        // if a different test was updated
+        callbackArgs?.state !== 'updated'
+        // we don't have to worry about checking
+        // arguments, since there's only 'force'
+        // and it won't differ between each test
+      )
       {
         callbackArgs = {
           id,
           ...args
         };
-      }
-      else
-      {
-        callback('progress', callbackArgs);
-        
-        callback('error', args);
       }
     };
 
