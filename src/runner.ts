@@ -40,6 +40,7 @@ type Options = {
   browsers?: string[],
   update?: boolean,
   parallel?: number,
+  repeat?: number,
   coverage?: boolean,
   clean?: boolean,
   screenshotsDir?: string,
@@ -115,6 +116,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   options.stepTimeout = (typeof options.stepTimeout !== 'number') ? 25000 : (options.stepTimeout || 25000);
 
   options.parallel = (typeof options.parallel !== 'number') ? 3 : (options.parallel || 3);
+  options.repeat = (typeof options.repeat !== 'number') ? 1 : (options.repeat || 1);
 
   options.tolerance = (typeof options.tolerance !== 'number') ? 2.5 : (options.tolerance || 2.5);
   options.antialiasingTolerance = (typeof options.antialiasingTolerance !== 'number') ? 3.5 : (options.antialiasingTolerance || 3.5);
@@ -528,10 +530,12 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   
   const parallel = limit(options.parallel);
 
-  // run tests in parallel
-  await Promise.all(
-    map.map(((t, index) => parallel(() => prepTest(t, index))))
-  );
+  for (let i = 0; i < options.repeat; i++)
+  {
+    await Promise.all(
+      map.map(((t, index) => parallel(() => prepTest(t, index))))
+    );
+  }
 
   // close browsers
   await Promise.all(targets

@@ -117,6 +117,7 @@ async function readConfig(): Promise<Config>
         // popular directories people hate
         '/node_modules/**',
         '/webpack/**',
+        '/ws \'(\'ignored\')\'',
         '/\'(\'webpack\')\'/**',
         '/\'(\'webpack\')\'-dev-server/**'
       ]
@@ -180,6 +181,7 @@ async function main()
     console.log();
 
     console.log(c.bold.cyan('--parallel, -p'), '   [number]   Control how many tests should be allowed to run at the same time.');
+    console.log(c.bold.cyan('--repeat, -r'), '     [number]   Repeat all targeted tests a specified number of times.');
     console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end.');
   }
   // opens might-ui (even if not installed because npx is cool)
@@ -251,6 +253,7 @@ async function run(map: Map, config: Config)
   let target = argv.target ?? argv.t;
 
   const parallel = argv.parallel ?? argv.p;
+  const repeat = argv.repeat ?? argv.r;
 
   const updateFailed = update && !target;
   const updateAll = update && target;
@@ -302,6 +305,13 @@ async function run(map: Map, config: Config)
     console.log(c.bold.yellow('To enable coverage reports please add "chromium" to your targets.\n'));
   }
 
+  if (coverage && repeat)
+  {
+    coverage = false;
+
+    console.log(c.bold.yellow('To enable coverage reports don\'t run tests on repeat.\n'));
+  }
+
   // hide cursor
   hideCursor();
 
@@ -323,6 +333,7 @@ async function run(map: Map, config: Config)
     browsers: config.targets,
     update,
     parallel: parallel ?? config.parallelTests,
+    repeat,
     coverage,
     clean,
     screenshotsDir: resolve('__might__'),
