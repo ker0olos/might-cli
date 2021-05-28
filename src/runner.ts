@@ -255,7 +255,22 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         });
           
         page = await context.newPage();
-          
+
+        page.on('crash', () =>
+        {
+          throw new Error('Page crashed');
+        });
+
+        page.on('pageerror', e =>
+        {
+          throw e;
+        });
+
+        page.on('requestfailed', e =>
+        {
+          throw new Error(e.failure().errorText);
+        });
+
         // start collecting coverage
         if (options.coverage && browserType === 'chromium')
           await page.coverage.startJSCoverage();
