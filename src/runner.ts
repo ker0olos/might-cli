@@ -258,6 +258,9 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
         page.on('crash', () =>
         {
+          console.warn('Browser pages might crash if they try to allocate too much memory.');
+          console.warn('The most common way to deal with crashes is to catch an exception.');
+
           throw new Error('Page crashed');
         });
 
@@ -268,7 +271,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
         page.on('requestfailed', e =>
         {
-          throw new Error(e.failure().errorText);
+          throw new Error(`${e.method()} ${e.url()} ${e.failure().errorText}`);
         });
 
         // start collecting coverage
