@@ -39,9 +39,9 @@ npm install --save-dev might-cli`
 
 When you run the command for the first time, it will walk you through all the things you need to configure:
 
-[![](./screenshots/1.png)](https://github.com/ker0olos/might-cli/raw/master/screenshots/1.png)
+[![](./screenshots/1.png)](https://github.com/ker0olos/might-cli/raw/main/screenshots/1.png)
 
-[![](./screenshots/2.png)](https://github.com/ker0olos/might-cli/raw/master/screenshots/2.png)
+[![](./screenshots/2.png)](https://github.com/ker0olos/might-cli/raw/main/screenshots/2.png)
 
 1. You will be asked to set a command that starts the development server of your app, it's spawned before testing begins and terminated after the testing is done (optional).
 2. The URL of the app (required).
@@ -56,18 +56,18 @@ Now you have to create a few tests to run, tests are described inside a file cal
 Run `npx might -m` to open the UI regardless of it's installed or not;
 
 > If you really want to write tests manually (not recommended) look at
-> [map.md](https://github.com/ker0olos/might-cli/blob/master/map.md).
+> [map.md](https://github.com/ker0olos/might-cli/blob/main/map.md).
 
 ##### *Might UI In Action:*
-[![](https://github.com/ker0olos/Might/raw/master/screenshots/1.png)]()
+[![](https://github.com/ker0olos/Might/raw/main/screenshots/1.png)]()
 
 ---
 
 Now that you have at least one test in `might.map.json`.
 
-[![](./screenshots/3.png)](https://github.com/ker0olos/might-cli/raw/master/screenshots/3.png)
+[![](./screenshots/3.png)](https://github.com/ker0olos/might-cli/raw/main/screenshots/3.png)
 
-[![](./screenshots/4.png)](https://github.com/ker0olos/might-cli/raw/master/screenshots/4.png)
+[![](./screenshots/4.png)](https://github.com/ker0olos/might-cli/raw/main/screenshots/4.png)
 
 The first time each individual test is performed, its outcome (after all the steps) is screenshotted and saved inside a folder in your project directory.
 

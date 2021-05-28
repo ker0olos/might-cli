@@ -12,7 +12,7 @@
 
           // We don't document those because we don't encourage writing tests manually (or because I'm lazy).
           // but you can have a look at
-          // https://github.com/ker0olos/might-cli/blob/master/src/runner.ts#L526
+          // https://github.com/ker0olos/might-cli/blob/main/src/runner.ts#L526
           // and try to figure it out
 
           "action": "",
