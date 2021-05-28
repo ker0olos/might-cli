@@ -267,6 +267,20 @@ async function run(map: Map, config: Config)
     if (target.length <= 0)
       target = undefined;
   }
+  // interactive tui to choose targets
+  else if (target)
+  {
+    const input = await prompts({
+      name: 'target',
+      type: 'multiselect',
+      message: 'Choice your targets?',
+      choices: map.map(({ title }) => ({ title, value: title.replace(/,/g, '\\,') }))
+    });
+
+    target = input.target.join(',');
+
+    console.log();
+  }
   else
   {
     target = undefined;

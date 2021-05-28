@@ -1,11 +1,11 @@
 {
   "name": "might-cli",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
-    "build": "rm -rf build && mkdir build && npx tsc --module commonjs --esModuleInterop --target ES2019 --lib ES2019,DOM --removeComments src/*.ts --outDir build",
-    "watch": "npx tsc --module commonjs --esModuleInterop --target ES2019 --lib ES2019,DOM -w src/*.ts --outDir build"
+    "build": "rm -rf build && mkdir build && npx tsc --removeComments -p tsconfig.json",
+    "watch": "npx tsc -w -p tsconfig.json"
   },
   "engines": {
     "node": ">=12"
@@ -38,7 +38,7 @@
     "convert-source-map": "^1.7.0",
     "draftlog": "^1.0.12",
     "exit": "^0.1.2",
-    "fs-extra": "^9.1.0",
+    "fs-extra": "^10.0.0",
     "is-ci": "^3.0.0",
     "istanbul-lib-coverage": "^3.0.0",
     "istanbul-lib-report": "^3.0.0",
@@ -51,28 +51,28 @@
     "nanomatch": "^1.2.13",
     "node-fetch": "^2.6.1",
     "p-limit": "^3.1.0",
-    "playwright": "^1.10.0",
+    "playwright": "^1.11.1",
     "prompts": "^2.4.1",
     "ps-tree": "^1.2.0",
     "sanitize-filename": "^1.6.3",
     "source-map": "^0.7.3",
-    "v8-to-istanbul": "^7.1.1"
+    "v8-to-istanbul": "^7.1.2"
   },
   "devDependencies": {
     "@types/convert-source-map": "^1.5.1",
     "@types/exit": "^0.1.31",
-    "@types/fs-extra": "^9.0.9",
+    "@types/fs-extra": "^9.0.11",
     "@types/is-ci": "^3.0.0",
     "@types/istanbul-lib-coverage": "^2.0.3",
     "@types/istanbul-lib-report": "^3.0.0",
     "@types/md5": "^2.3.0",
     "@types/minimist": "^1.2.1",
-    "@types/node-fetch": "^2.5.8",
-    "@types/prompts": "^2.0.10",
-    "@typescript-eslint/eslint-plugin": "^4.20.0",
-    "@typescript-eslint/parser": "^4.20.0",
-    "eslint": "^7.23.0",
+    "@types/node-fetch": "^2.5.10",
+    "@types/prompts": "^2.0.12",
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
+    "eslint": "^7.27.0",
     "eslint-plugin-security": "^1.4.0",
-    "typescript": "^4.2.3"
+    "typescript": "^4.3.2"
   }
 }
