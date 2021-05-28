@@ -256,24 +256,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           
         page = await context.newPage();
 
-        page.on('crash', () =>
-        {
-          console.warn('Browser pages might crash if they try to allocate too much memory.');
-          console.warn('The most common way to deal with crashes is to catch an exception.');
-
-          throw new Error('Page crashed');
-        });
-
-        page.on('pageerror', e =>
-        {
-          throw e;
-        });
-
-        page.on('requestfailed', e =>
-        {
-          throw new Error(`${e.method()} ${e.url()} ${e.failure().errorText}`);
-        });
-
         // start collecting coverage
         if (options.coverage && browserType === 'chromium')
           await page.coverage.startJSCoverage();
@@ -295,6 +277,20 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       };
 
       await updateContext();
+
+      let err: Error;
+
+      page.on('crash', () =>
+      {
+        console.warn('Browser pages might crash if they try to allocate too much memory.');
+        console.warn('The most common way to deal with crashes is to catch an exception.');
+
+        err = new Error('Page crashed');
+      });
+
+      page.on('pageerror', e => err = e);
+
+      page.on('requestfailed', e => err = new Error(`${e.method()} ${e.url()} ${e.failure().errorText}`));
 
       // run the steps
       for (const step of test.steps)
@@ -342,6 +338,9 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       }
 
       // all steps were executed
+
+      if (err)
+        throw err;
 
       const screenshotPath = join(options.screenshotsDir, `${screenshotId}.${browserType}.png`);
 
