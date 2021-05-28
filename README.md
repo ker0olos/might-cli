@@ -59,7 +59,7 @@ Run `npx might -m` to open the UI regardless of it's installed or not;
 > [map.md](https://github.com/ker0olos/might-cli/blob/main/map.md).
 
 ##### *Might UI In Action:*
-[![](https://github.com/ker0olos/Might/raw/main/screenshots/1.png)]()
+[![](https://github.com/ker0olos/Might/raw/main/screenshots/1.png)](https://github.com/ker0olos/Might/raw/main/screenshots/1.png)
 
 ---
 
