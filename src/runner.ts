@@ -714,14 +714,21 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     for (const elem of elements)
     {
-      if (step.value === 'right')
-        await elem.click({ button: 'right', force: true, timeout: options.stepTimeout });
-      else if (step.value === 'middle')
-        await elem.click({ button: 'middle', force: true, timeout: options.stepTimeout });
-      else if (touchEvents)
-        await elem.tap({ force: true, timeout: options.stepTimeout });
-      else
-        await elem.click({ button: 'left', force: true, timeout: options.stepTimeout });
+      try
+      {
+        if (step.value === 'right')
+          await elem.click({ button: 'right', force: true, timeout: options.stepTimeout });
+        else if (step.value === 'middle')
+          await elem.click({ button: 'middle', force: true, timeout: options.stepTimeout });
+        else if (touchEvents)
+          await elem.tap({ force: true, timeout: options.stepTimeout });
+        else
+          await elem.click({ button: 'left', force: true, timeout: options.stepTimeout });
+      }
+      catch
+      {
+        //
+      }
 
       await page.mouse.move(-1, -1);
     }
@@ -849,25 +856,32 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     for (const elem of elements)
     {
-      // get in the new value
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const current = await elem.evaluate((elem) => (elem as any).value);
-
-      // focus on the input element
-      await elem.focus();
-
-      // empty the input element's value
-      for (let i = 0; i < current.length; i++)
+      try
       {
-        await page.keyboard.press('Backspace');
+        // get in the new value
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const current = await elem.evaluate((elem) => (elem as any).value);
+
+        // focus on the input element
+        await elem.focus();
+
+        // empty the input element's value
+        for (let i = 0; i < current.length; i++)
+        {
+          await page.keyboard.press('Backspace');
+        }
+
+        // type in the new value
+        await page.keyboard.type(step.value);
+
+        // blur the element after that because
+        // input caret can ruin tests
+        await elem.evaluate((elem) => elem.blur());
       }
-
-      // type in the new value
-      await page.keyboard.type(step.value);
-
-      // blur the element after that because
-      // input caret can ruin tests
-      await elem.evaluate((elem) => elem.blur());
+      catch
+      {
+        //
+      }
     }
   }
 }
