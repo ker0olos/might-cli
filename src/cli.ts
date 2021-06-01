@@ -165,7 +165,7 @@ async function main()
   if (argv.help || argv.h)
   {
     console.log(c.bold.cyan('--help, -h'), '       Opens this help menu.');
-    console.log(c.bold.cyan('--map, -m'), '        Opens Might UI (even if not installed).');
+    console.log(c.bold.cyan('--map, -m, -x'), '        Opens Might UI (even if not installed).');
     console.log(c.bold.cyan('--print'), '          Prints all the targeted.');
 
     console.log();
@@ -185,7 +185,7 @@ async function main()
     console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end.');
   }
   // opens might-ui (even if not installed because npx is cool)
-  else if (argv.map || argv.m)
+  else if (argv.map || argv.m || argv.x)
   {
     running = spawn('npx might-ui', { shell: true, cwd: process.cwd() });
 
