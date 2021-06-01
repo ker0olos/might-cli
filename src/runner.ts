@@ -722,6 +722,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
         await elem.tap({ force: true, timeout: options.stepTimeout });
       else
         await elem.click({ button: 'left', force: true, timeout: options.stepTimeout });
+
+      await page.mouse.move(-1, -1);
     }
   }
   else if (step.action === 'drag')
