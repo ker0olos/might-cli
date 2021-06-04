@@ -858,10 +858,16 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
     {
       try
       {
-        // get in the new value
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const current = await elem.evaluate((elem) => (elem as any).value);
+        const { current, disabled } = await elem.evaluate(elem => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          current: (elem as any).value,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          disabled: (elem as any).disabled
+        }));
 
+        if (disabled)
+          continue;
+        
         // focus on the input element
         await elem.focus();
 
