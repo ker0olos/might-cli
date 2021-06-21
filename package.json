@@ -1,6 +1,6 @@
 {
   "name": "might-cli",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
@@ -35,8 +35,8 @@
   ],
   "dependencies": {
     "ansi-colors": "^4.1.1",
-    "convert-source-map": "^1.7.0",
-    "draftlog": "^1.0.12",
+    "convert-source-map": "^1.8.0",
+    "draftlog": "1.0.12",
     "exit": "^0.1.2",
     "fs-extra": "^10.0.0",
     "is-ci": "^3.0.0",
@@ -51,12 +51,12 @@
     "nanomatch": "^1.2.13",
     "node-fetch": "^2.6.1",
     "p-limit": "^3.1.0",
-    "playwright": "^1.11.1",
+    "playwright": "^1.12.2",
     "prompts": "^2.4.1",
     "ps-tree": "^1.2.0",
     "sanitize-filename": "^1.6.3",
     "source-map": "^0.7.3",
-    "v8-to-istanbul": "^7.1.2"
+    "v8-to-istanbul": "^8.0.0"
   },
   "devDependencies": {
     "@types/convert-source-map": "^1.5.1",
@@ -68,11 +68,11 @@
     "@types/md5": "^2.3.0",
     "@types/minimist": "^1.2.1",
     "@types/node-fetch": "^2.5.10",
-    "@types/prompts": "^2.0.12",
-    "@typescript-eslint/eslint-plugin": "^4.25.0",
-    "@typescript-eslint/parser": "^4.25.0",
-    "eslint": "^7.27.0",
+    "@types/prompts": "^2.0.13",
+    "@typescript-eslint/eslint-plugin": "^4.27.0",
+    "@typescript-eslint/parser": "^4.27.0",
+    "eslint": "^7.29.0",
     "eslint-plugin-security": "^1.4.0",
-    "typescript": "^4.3.2"
+    "typescript": "^4.3.4"
   }
 }
