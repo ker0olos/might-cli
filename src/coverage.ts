@@ -37,7 +37,7 @@ export type CoverageEntry = {
   }[]
 }
 
-export async function coverage(coverageCollection: CoverageEntry[], dir: string, exclude: string[]): Promise<number>
+export async function coverage(coverageCollection: CoverageEntry[], meta: { name: string }, dir: string, exclude: string[]): Promise<[ number, { name: string, coverage: number, uncoveredLines: number[] }[] ]>
 {
   const mainMap = createCoverageMap();
 
@@ -63,22 +63,44 @@ export async function coverage(coverageCollection: CoverageEntry[], dir: string,
   
         // unpack source-map files
         await Promise.all(consumer.sources
-          .map((path, id) =>
+          .map(async(path, id) =>
           {
-            let relative = path;
-  
+            let relative = path.replace(/\\/g, '');
+
             // ignore protocols
-            if (path.indexOf('://') >= 0)
-              relative = path.split('://')[1];
-  
+
+            if (path.includes('://'))
+              relative = path.substring(path.indexOf('://') + 3);
+
+            // eslint-disable-next-line security/detect-non-literal-regexp
+            relative = relative.replace(new RegExp(process.env.PWD, 'g'), '');
+
+            // ignore project
+
+            if (relative.startsWith(`/${meta.name}/`))
+              relative = relative.replace(`/${meta.name}`, '');
+            else if (relative.startsWith(`${meta.name}/`))
+              relative = relative.replace(meta.name, '');
+            
+            if (!relative.startsWith('/'))
+              relative = '/' + relative;
+              
             // match path with excluded globs
-            if (isMatch(relative.replace('\\', ''), exclude, undefined))
-              return;
+            if (!isMatch(relative, exclude, undefined))
+            {
+              // save to disk
+              // those files are used while istanbul is generating reports
+              // and get cleaned up after
   
-            // save to disk
-            // those files are used while istanbul is generating reports
-            // and get cleaned up after
-            return outputFile(join(dir, relative), sourcemap?.sourcesContent?.[id]).catch(() => undefined);
+              try
+              {
+                await outputFile(join(dir, relative), sourcemap?.sourcesContent?.[id]);
+              }
+              catch (err)
+              {
+                //
+              }
+            }
           }));
       }
 
@@ -98,10 +120,25 @@ export async function coverage(coverageCollection: CoverageEntry[], dir: string,
 
     Object.entries(data).forEach(([ key, file ]) =>
     {
+      key = key
+        .replace(/\\/g, '')
+        // eslint-disable-next-line security/detect-non-literal-regexp
+        .replace(new RegExp(process.env.PWD, 'g'), '');
+
+      // ignore project
+
+      if (key.startsWith(`/${meta.name}/`))
+        key = key.replace(`/${meta.name}`, '');
+      else if (key.startsWith(`${meta.name}/`))
+        key = key.replace(meta.name, '');
+      
+      if (!key.startsWith('/'))
+        key = '/' + key;
+
       // match path with excluded globs
-      if (!key.length || isMatch(key.replace('\\', ''), exclude, undefined))
+      if (isMatch(key, exclude, undefined))
         return;
-        
+
       // resolve path
       file.path = join(dir, key);
 
@@ -147,7 +184,17 @@ export async function coverage(coverageCollection: CoverageEntry[], dir: string,
     // console.error(e);
   }
 
-  return mainMap.getCoverageSummary().lines.pct;
+  return [ Math.floor(mainMap.getCoverageSummary().lines.pct), mainMap.files().map(file =>
+  {
+    const coverage = Math.floor(mainMap.fileCoverageFor(file).toSummary().lines.pct);
+    const uncoveredLines = mainMap.fileCoverageFor(file).getUncoveredLines();
+
+    return {
+      name: file.replace(dir, ''),
+      coverage,
+      uncoveredLines
+    };
+  }) ];
 }
 
 function mergeMappings(file: FileCoverage | FileCoverageData, target: FileCoverage)

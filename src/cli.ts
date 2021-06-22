@@ -11,7 +11,7 @@ import isCI from 'is-ci';
 
 import sanitize from 'sanitize-filename';
 
-import { join } from 'path';
+import { basename, join } from 'path';
 
 import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
 
@@ -165,8 +165,8 @@ async function main()
   if (argv.help || argv.h)
   {
     console.log(c.bold.cyan('--help, -h'), '       Opens this help menu.');
-    console.log(c.bold.cyan('--map, -m, -x'), '        Opens Might UI (even if not installed).');
-    console.log(c.bold.cyan('--print'), '          Prints all the targeted.');
+    console.log(c.bold.cyan('--map, -m, -x'), '    Opens Might UI (even if not installed).');
+    console.log(c.bold.cyan('--print'), '          Prints all the targeted tests.');
 
     console.log();
 
@@ -181,7 +181,6 @@ async function main()
     console.log();
 
     console.log(c.bold.cyan('--parallel, -p'), '   [number]   Control how many tests should be allowed to run at the same time.');
-    console.log(c.bold.cyan('--repeat, -r'), '     [number]   Repeat all targeted tests a specified number of times.');
     console.log(c.bold.cyan('--coverage, -c'), '   [boolean]  Outputs a coverage report at the end.');
   }
   // opens might-ui (even if not installed because npx is cool)
@@ -253,10 +252,11 @@ async function run(map: Map, config: Config)
   let target = argv.target ?? argv.t;
 
   const parallel = argv.parallel ?? argv.p;
-  const repeat = argv.repeat ?? argv.r;
 
   const updateFailed = update && !target;
   const updateAll = update && target;
+
+  const meta = await readJSON(resolve('package.json'));
 
   // handle target parsing
   if (typeof target === 'string')
@@ -319,13 +319,6 @@ async function run(map: Map, config: Config)
     console.log(c.bold.yellow('To enable coverage reports please add "chromium" to your targets.\n'));
   }
 
-  if (coverage && repeat)
-  {
-    coverage = false;
-
-    console.log(c.bold.yellow('To enable coverage reports don\'t run tests on repeat.\n'));
-  }
-
   // hide cursor
   hideCursor();
 
@@ -343,11 +336,11 @@ async function run(map: Map, config: Config)
       height: config.viewport.height
     },
     map,
+    meta,
     target,
     browsers: config.targets,
     update,
     parallel: parallel ?? config.parallelTests,
-    repeat,
     coverage,
     clean,
     screenshotsDir: resolve('__might__'),
@@ -421,10 +414,8 @@ async function run(map: Map, config: Config)
         // when summary is printed it show replace whatever what shown in that spot
 
         // use a normal log if no info was being shown
-        if (!draft)
-          console.log();
 
-        (draft ?? console.log)(`Summary:${updateNotice} ${passed}${updated}${failed}${skipped}${total}.`);
+        console.log(`\nSummary:${updateNotice} ${passed}${updated}${failed}${skipped}${total}.`);
 
         if (!target && value.unused.length)
         {
@@ -519,17 +510,62 @@ async function run(map: Map, config: Config)
         draft = console.draft(c.bold.blueBright('Generating Coverage Report...'));
       }
 
-      if (value.state === 'done' && value.report !== undefined)
+      if (value.state === 'done')
       {
-        let color = c.red;
+        const overall = value.overall;
 
-        if (value.report >= 70)
-          color = c.yellow;
+        const files: {
+          name: string,
+          coverage: number,
+          uncoveredLines: number[]
+        }[] = value.files;
 
-        if (value.report >= 90)
-          color = c.green;
+        if (files?.length)
+        {
+          let length = 0;
+          
+          files.forEach(f => f.name.length > length ? length = f.name.length : undefined);
+          
+          draft(c.grey(`Files ${Array(length - 2).fill(' ').join('')} Cov   Uncovered`));
+          console.log(c.grey(`----- ${Array(length - 2).fill(' ').join('')} ---   ---------`));
 
-        console.log('\nTotal Coverage is', color.bold(`${value.report}%`));
+          console.log(files?.map(({ name, coverage, uncoveredLines }) =>
+          {
+            let color = c.red;
+
+            if (coverage >= 90)
+              color = c.green;
+            else if (coverage >= 70)
+              color = c.yellow;
+
+            const slice = uncoveredLines.length > 3 ? '...' : '';
+            
+            const leftPadding = Array(length - name.length + 3).fill(' ').join('');
+
+            const rightPadding = Array(1).fill(' ').join('');
+
+            const pct = coverage >= 100 ? c.green.bold('✔') : color.bold(`${coverage}%`);
+            
+            const filename = c.grey(name.replace(basename(name), '')) + c.bold(basename(name));
+            
+            return `${filename} ${leftPadding} ${pct} ${rightPadding} ${c.red.bold(uncoveredLines.slice(0, 3).join(', ') + slice)}`;
+          }).join('\n'));
+
+          console.log();
+
+          let color = c.red;
+
+          if (overall >= 90)
+            color = c.green;
+          else if (overall >= 70)
+            color = c.yellow;
+          
+          console.log('Total Coverage is ' + color.bold(`${overall}%`));
+        }
+        else
+        {
+          draft('');
+        }
       }
     }
   });
