@@ -81,6 +81,8 @@ run `npx might -h` to see additional information about how to run specific tests
 
 Please use this [Docker image](https://hub.docker.com/_/microsoft-playwright) or this [GitHub Action](https://github.com/microsoft/playwright-github-action).
 
+And here's an [example of a project](https://github.com/ker0olos/example) using Might with Github Actions.
+
 #### What can I test?
 
 - Waiting
