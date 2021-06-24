@@ -493,8 +493,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       // CONS: will cause tests with duplicate titles to fail
       sanitize(test.title);
 
-    const processes = [];
-
     callback('progress', {
       id,
       title: displayName,
@@ -533,13 +531,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     for (const type of targets)
     {
       // eslint-disable-next-line security/detect-object-injection
-      const browser = browsers[type];
-
-      processes.push(runTest(browser, type, test, displayName, screenshotId, callbackWrapper));
+      await runTest(browsers[type], type, test, displayName, screenshotId, callbackWrapper);
     }
-
-    // runs the test on all targets in parallel
-    await Promise.all(processes);
 
     // release the real callback after
     // all the browsers are finished
@@ -548,9 +541,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   
   const parallel = limit(options.parallel);
 
-  await Promise.all(
-    map.map(((t, index) => parallel(() => prepTest(t, index))))
-  );
+  await Promise.all(map.map((t, index) => parallel(() => prepTest(t, index))));
 
   // close browsers
   await Promise.all(targets

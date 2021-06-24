@@ -1,4 +1,5 @@
 Performance Issues and Bugs:
+  ☐ the firefox-related connection errors caused by tools like webpack-dev-server
 
 Documentation:
 
