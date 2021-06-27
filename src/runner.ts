@@ -51,6 +51,7 @@ type Options = {
   stepTimeout?: number,
   tolerance?: number,
   antialiasingTolerance?: number,
+  pageErrorIgnore?: string[],
   coverageExclude?: string[]
 };
 
@@ -122,6 +123,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   options.tolerance = (typeof options.tolerance !== 'number') ? 2.5 : (options.tolerance || 2.5);
   options.antialiasingTolerance = (typeof options.antialiasingTolerance !== 'number') ? 3.5 : (options.antialiasingTolerance || 3.5);
   
+  options.pageErrorIgnore = (!Array.isArray(options.pageErrorIgnore)) ? [] : options.pageErrorIgnore;
   options.coverageExclude = (!Array.isArray(options.coverageExclude)) ? [] : options.coverageExclude;
 
   let map = options.map;
@@ -292,7 +294,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       page.on('pageerror', e => err = e);
 
       page.on('requestfailed', e => err = new Error(`${e.method()} ${e.url()} ${e.failure().errorText}`));
-
+      
       // run the steps
       for (const step of test.steps)
       {
@@ -341,7 +343,17 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       // all steps were executed
 
       if (err)
-        throw err;
+      {
+        // eslint-disable-next-line security/detect-non-literal-regexp
+        if (options.pageErrorIgnore.find(x => err.message?.match?.(new RegExp(x))))
+        {
+          //
+        }
+        else
+        {
+          throw err;
+        }
+      }
 
       const screenshotPath = join(options.screenshotsDir, `${screenshotId}.${browserType}.png`);
 

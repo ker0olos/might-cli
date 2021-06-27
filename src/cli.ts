@@ -38,6 +38,7 @@ type Config = {
   defaultTimeout: number,
   tolerance: number,
   antialiasingTolerance: number,
+  pageErrorIgnore: string[],
   coverageExclude: string[]
 }
 
@@ -113,6 +114,9 @@ async function readConfig(): Promise<Config>
       defaultTimeout: 25000,
       tolerance: 2.5,
       antialiasingTolerance: 3.5,
+      pageErrorIgnore: [
+        'net::ERR_ABORTED'
+      ],
       coverageExclude: [
         // popular directories people hate
         '/node_modules/**',
@@ -349,6 +353,7 @@ async function run(map: Map, config: Config)
     stepTimeout: config.defaultTimeout,
     tolerance: config.tolerance,
     antialiasingTolerance: config.antialiasingTolerance,
+    pageErrorIgnore: config.pageErrorIgnore,
     coverageExclude: config.coverageExclude
   },
   (type, value) =>
