@@ -116,7 +116,8 @@ async function readConfig(): Promise<Config>
       antialiasingTolerance: 3.5,
       pageErrorIgnore: [
         'net::ERR_ABORTED',
-        'NS_BINDING_ABORTED'
+        'NS_BINDING_ABORTED',
+        'access control checks'
       ],
       coverageExclude: [
         // popular directories people hate
