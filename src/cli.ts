@@ -117,7 +117,8 @@ async function readConfig(): Promise<Config>
       pageErrorIgnore: [
         'net::ERR_ABORTED',
         'NS_BINDING_ABORTED',
-        'access control checks'
+        'access control checks',
+        'Load request cancelled'
       ],
       coverageExclude: [
         // popular directories people hate

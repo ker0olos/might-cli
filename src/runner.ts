@@ -344,7 +344,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       if (err)
       {
-        // eslint-disable-next-line security/detect-non-literal-regexp
         if (options.pageErrorIgnore.find(x => err.message?.includes?.(x)))
         {
           //
