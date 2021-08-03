@@ -51,7 +51,7 @@ declare global {
 
 let running: import('child_process').ChildProcessWithoutNullStreams;
 
-const quiet = isCI;
+let quiet = isCI;
 
 async function readConfig(): Promise<Config>
 {
@@ -173,6 +173,7 @@ async function main()
   {
     console.log(c.bold.cyan('--help, -h'), '       Opens this help menu.');
     console.log(c.bold.cyan('--map, -m, -x'), '    Opens Might UI (even if not installed).');
+    console.log(c.bold.cyan('--quiet, -q'), '      Disables all animations.');
     console.log(c.bold.cyan('--print'), '          Prints all the targeted tests.');
 
     console.log();
@@ -213,7 +214,15 @@ async function main()
   else
   {
     if (quiet)
+    {
       console.log(c.magenta('Might discovered it\'s running inside a CI environment, it will be quieter.\n'));
+    }
+    else if (argv.q || argv.quiet)
+    {
+      quiet = true;
+      
+      console.log(c.magenta('Might will be quieter.\n'));
+    }
 
     // read the config file
     const config = await readConfig();
@@ -445,7 +454,7 @@ async function run(map: Map, config: Config)
     {
       if (value.state === 'running')
       {
-        const draft = (quiet) ? console.log : console.draft(c.bold.blueBright('RUNNING (|)'), value.title);
+        const draft = quiet ? console.log : console.draft(c.bold.blueBright('RUNNING (|)'), value.title);
 
         running[value.id] = {
           draft,
