@@ -413,10 +413,10 @@ async function run(map: Map, config: Config)
       // print a summary of all the tests
       else
       {
-        const passed = (value.passed) ? `${c.bold.green(`${value.passed} passed`)}, ` : '';
-        const updated = (value.updated) ? `${c.bold.yellow(`${value.updated} updated`)}, ` : '';
-        const failed = (value.failed) ? `${c.bold.red(`${value.failed} failed`)}, ` : '';
-        const skipped = (value.skipped) ? `${c.bold.magenta(`${value.skipped} skipped`)}, ` : '';
+        const passed = value.passed ? `${c.bold.green(`${value.passed} passed`)}, ` : '';
+        const updated = value.updated ? `${c.bold.yellow(`${value.updated} updated`)}, ` : '';
+        const failed = value.failed ? `${c.bold.red(`${value.failed} failed`)}, ` : '';
+        const skipped = value.skipped ? `${c.bold.magenta(`${value.skipped} skipped`)}, ` : '';
 
         const total = `${value.total} total`;
 
@@ -495,10 +495,12 @@ async function run(map: Map, config: Config)
       {
         const time = roundTime(Date.now(),  running[value.id].timestamp);
 
+        const type = value.type !== undefined ? ` on ${value.type}` : '';
+        
         let reason = '(NEW)';
 
         if (updateFailed && value.force)
-          reason = c.red('(FAILED)');
+          reason = c.red(`(FAILED${type})`);
         else if (value.force)
           reason = '(FORCED)';
 
@@ -508,7 +510,9 @@ async function run(map: Map, config: Config)
       {
         const time = roundTime(Date.now(),  running[value.id].timestamp);
 
-        running[value.id].draft(c.bold.red(`FAILED (${time}s)`), value.title);
+        const type = value.type !== undefined ? ` on ${value.type}` : '';
+
+        running[value.id].draft(c.bold.red(`FAILED${type} (${time}s)`), value.title);
       }
       else if (value.state === 'passed')
       {

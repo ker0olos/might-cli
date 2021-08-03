@@ -123,8 +123,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   options.tolerance = (typeof options.tolerance !== 'number') ? 2.5 : (options.tolerance || 2.5);
   options.antialiasingTolerance = (typeof options.antialiasingTolerance !== 'number') ? 3.5 : (options.antialiasingTolerance || 3.5);
   
-  options.pageErrorIgnore = (!Array.isArray(options.pageErrorIgnore)) ? [] : options.pageErrorIgnore;
-  options.coverageExclude = (!Array.isArray(options.coverageExclude)) ? [] : options.coverageExclude;
+  options.pageErrorIgnore = !Array.isArray(options.pageErrorIgnore) ? [] : options.pageErrorIgnore;
+  options.coverageExclude = !Array.isArray(options.coverageExclude) ? [] : options.coverageExclude;
 
   let map = options.map;
 
@@ -373,8 +373,9 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         screenshots[screenshotPath] = false;
 
         callback('progress', {
+          force,
           title: displayName,
-          force: force,
+          type: targets.length > 1 ? browserType : undefined,
           state: 'updated'
         });
 
@@ -473,6 +474,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       callback('progress', {
         title: displayName,
+        type: targets.length > 1 ? browserType : undefined,
         state: 'failed'
       });
 
@@ -519,7 +521,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       if (type === 'error')
       {
         callback('progress', callbackArgs);
-        
         callback('error', args);
       }
       else if (
