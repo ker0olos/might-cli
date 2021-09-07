@@ -1,8 +1,8 @@
+/* eslint-disable security/detect-non-literal-fs-filename */
+
 import jimp from 'jimp';
 
 import playwright from 'playwright';
-
-import limit from 'p-limit';
 
 import sanitize from 'sanitize-filename';
 
@@ -10,7 +10,7 @@ import md5 from 'md5';
 
 import { join } from 'path';
 
-import { pathExists, readFile, ensureDir, emptyDir, readdir, unlink } from 'fs-extra';
+import fs from 'fs-extra';
 
 import { stepsToString } from 'might-core';
 
@@ -179,13 +179,13 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   }
 
   // ensure the screenshots directory exists
-  await ensureDir(options.screenshotsDir);
+  await fs.ensureDir(options.screenshotsDir);
 
   const screenshots = {};
 
   // get all files in the screenshots directory
-  (await readdir(options.screenshotsDir))
-    .forEach((p) =>
+  (await fs.readdir(options.screenshotsDir))
+    .forEach(p =>
     {
       if (p.endsWith('.png'))
         screenshots[join(options.screenshotsDir, p)] = true;
@@ -356,7 +356,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       const screenshotPath = join(options.screenshotsDir, `${screenshotId}.${browserType}.png`);
 
-      const screenshotExists = await pathExists(screenshotPath);
+      const screenshotExists = await fs.pathExists(screenshotPath);
 
       // new first-run test or a forced update
       const update = async(force?: boolean) =>
@@ -401,7 +401,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           }));
 
           // with the old screenshot
-          const img2 = await jimp.read(await readFile(screenshotPath));
+          const img2 = await jimp.read(await fs.readFile(screenshotPath));
 
           const [ x1, y1 ] = [ img1.getWidth(), img1.getHeight() ];
           const [ x2, y2 ] = [ img2.getWidth(), img2.getHeight() ];
@@ -556,9 +556,9 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     callback('progress', callbackArgs);
   };
   
-  const parallel = limit(options.parallel);
+  const parallel = await import('p-limit');
 
-  await Promise.all(map.map((t, index) => parallel(() => prepTest(t, index))));
+  await Promise.all(map.map((t, index) => parallel.default(options.parallel)(() => prepTest(t, index))));
 
   // close browsers
   await Promise.all(targets
@@ -573,7 +573,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     });
 
     // empties and ensures that the coverage directories exists
-    await emptyDir(options.coverageDir);
+    await fs.emptyDir(options.coverageDir);
   
     //  handle the coverage data returned by playwright
     const [ overall, files ] = await coverage(coverageCollection, options.meta, options.coverageDir, options.coverageExclude);
@@ -597,7 +597,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     for (let i = 0; i < unused.length; i++)
     {
       // eslint-disable-next-line security/detect-object-injection
-      await unlink(unused[i]);
+      await fs.unlink(unused[i]);
     }
   }
 

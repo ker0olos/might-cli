@@ -13,7 +13,7 @@ import sanitize from 'sanitize-filename';
 
 import { basename, join } from 'path';
 
-import { readJSON, writeJSON, writeFileSync } from 'fs-extra';
+import fs from 'fs-extra';
 
 import { spawn } from 'child_process';
 
@@ -59,7 +59,7 @@ async function readConfig(): Promise<Config>
 
   try
   {
-    config = await readJSON(resolve('might.config.json'));
+    config = await fs.readJSON(resolve('might.config.json'));
   }
   catch
   {
@@ -130,7 +130,7 @@ async function readConfig(): Promise<Config>
       ]
     };
 
-    await writeJSON(resolve('might.config.json'), config, { spaces: 2 });
+    await fs.writeJSON(resolve('might.config.json'), config, { spaces: 2 });
   }
   finally
   {
@@ -144,7 +144,7 @@ async function readMap(dialog: boolean): Promise<Map>
 
   try
   {
-    map = (await readJSON(resolve('might.map.json'))).data;
+    map = (await fs.readJSON(resolve('might.map.json'))).data;
   }
   catch
   {
@@ -206,7 +206,7 @@ async function main()
   // display version number
   else if (argv.version || argv.v)
   {
-    const json = await readJSON(join(__dirname, '../package.json'));
+    const json = await fs.readJSON(join(__dirname, '../package.json'));
 
     console.log(`v${json.version}`);
   }
@@ -272,7 +272,7 @@ async function run(map: Map, config: Config)
   const updateFailed = update && !target;
   const updateAll = update && target;
 
-  const meta = await readJSON(resolve('package.json'));
+  const meta = await fs.readJSON(resolve('package.json'));
 
   // handle target parsing
   if (typeof target === 'string')
@@ -385,7 +385,8 @@ async function run(map: Map, config: Config)
         const filename = resolve(sanitize(`might.error.${new Date().toISOString()}.png`));
 
         //  write the difference image to disk
-        writeFileSync(filename, value.diff);
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        fs.writeFileSync(filename, value.diff);
 
         error = new Error(`${value.message}\n${c.yellow(`Diff Image: ${c.white(filename)}`)}`);
       }

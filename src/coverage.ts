@@ -4,7 +4,7 @@ import v8toIstanbul from 'v8-to-istanbul';
 
 import { createContext } from 'istanbul-lib-report';
 
-import { createCoverageMap } from 'istanbul-lib-coverage';
+import * as libCoverage from 'istanbul-lib-coverage';
 
 import type { FileCoverage, FileCoverageData } from 'istanbul-lib-coverage';
 
@@ -12,15 +12,13 @@ import reports from 'istanbul-reports';
 
 import { join } from 'path';
 
-import fetch from 'node-fetch';
-
 import { outputFile } from 'fs-extra';
 
 import { SourceMapConsumer, RawSourceMap } from 'source-map';
 
 import convert from 'convert-source-map';
 
-import { any as isMatch } from 'nanomatch';
+import * as nanomatch from 'nanomatch';
 
 export type CoverageEntry = {
   url: string,
@@ -39,7 +37,7 @@ export type CoverageEntry = {
 
 export async function coverage(coverageCollection: CoverageEntry[], meta: { name: string }, dir: string, exclude: string[]): Promise<[ number, { name: string, coverage: number, uncoveredLines: number[] }[] ]>
 {
-  const mainMap = createCoverageMap();
+  const mainMap = libCoverage.createCoverageMap();
 
   const processed: Record<string, ReturnType<typeof v8toIstanbul>> = {};
 
@@ -50,7 +48,7 @@ export async function coverage(coverageCollection: CoverageEntry[], meta: { name
     const entryPath = new URL(entry.url).pathname;
 
     // match path with excluded globs
-    if (!entryPath.length || isMatch(entryPath.replace('\\', ''), exclude, undefined))
+    if (!entryPath.length || nanomatch.any(entryPath.replace('\\', ''), exclude, undefined))
       continue;
     
     if (!processed[entryPath])
@@ -86,7 +84,7 @@ export async function coverage(coverageCollection: CoverageEntry[], meta: { name
               relative = '/' + relative;
               
             // match path with excluded globs
-            if (!isMatch(relative, exclude, undefined))
+            if (!nanomatch.any(relative, exclude, undefined))
             {
               // save to disk
               // those files are used while istanbul is generating reports
@@ -136,7 +134,7 @@ export async function coverage(coverageCollection: CoverageEntry[], meta: { name
         key = '/' + key;
 
       // match path with excluded globs
-      if (isMatch(key, exclude, undefined))
+      if (nanomatch.any(key, exclude, undefined))
         return;
 
       // resolve path
@@ -237,7 +235,9 @@ async function getSourcemap(entry: CoverageEntry)
 
   try
   {
-    const response = await fetch(`${entry.url}.map`);
+    const fetch = await import('node-fetch');
+
+    const response = await fetch.default(`${entry.url}.map`);
 
     if (response.status !== 200)
       throw new Error();
