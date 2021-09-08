@@ -1,7 +1,6 @@
 {
-  "type": "module",
   "name": "might-cli",
-  "version": "3.0.0",
+  "version": "2.5.0",
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "npm run build",
@@ -9,7 +8,7 @@
     "watch": "npx tsc -w -p tsconfig.json"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=14"
   },
   "bin": {
     "might": "build/cli.js"
@@ -50,8 +49,8 @@
     "might-core": "^1.0.2",
     "minimist": "^1.2.5",
     "nanomatch": "^1.2.13",
-    "node-fetch": "^3.0.0",
-    "p-limit": "^4.0.0",
+    "node-fetch": "^2.6.1",
+    "p-limit": "^3.1.0",
     "playwright": "^1.14.1",
     "prompts": "^2.4.1",
     "ps-tree": "^1.2.0",
@@ -68,7 +67,7 @@
     "@types/istanbul-lib-report": "^3.0.0",
     "@types/md5": "^2.3.1",
     "@types/minimist": "^1.2.2",
-    "@types/node-fetch": "^3.0.3",
+    "@types/node-fetch": "^2.5.12",
     "@types/prompts": "^2.0.14",
     "@typescript-eslint/eslint-plugin": "^4.31.0",
     "@typescript-eslint/parser": "^4.31.0",
