@@ -11,7 +11,9 @@ import isCI from 'is-ci';
 
 import sanitize from 'sanitize-filename';
 
-import { basename, join } from 'path';
+import { basename, dirname, join } from 'path';
+
+import { fileURLToPath } from 'url';
 
 import fs from 'fs-extra';
 
@@ -48,6 +50,8 @@ declare global {
     draft(...data: any[]): Console['draft']
   }
 }
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 let running: import('child_process').ChildProcessWithoutNullStreams;
 

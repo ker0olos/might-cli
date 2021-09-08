@@ -14,8 +14,6 @@ import { join } from 'path';
 
 import { outputFile } from 'fs-extra';
 
-import fetch from 'node-fetch';
-
 import { SourceMapConsumer, RawSourceMap } from 'source-map';
 
 import convert from 'convert-source-map';
@@ -39,6 +37,8 @@ export type CoverageEntry = {
 
 export async function coverage(coverageCollection: CoverageEntry[], meta: { name: string }, dir: string, exclude: string[]): Promise<[ number, { name: string, coverage: number, uncoveredLines: number[] }[] ]>
 {
+  const fetch = await import('node-fetch');
+
   const mainMap = libCoverage.createCoverageMap();
 
   const processed: Record<string, ReturnType<typeof v8toIstanbul>> = {};
@@ -55,7 +55,7 @@ export async function coverage(coverageCollection: CoverageEntry[], meta: { name
     
     if (!processed[entryPath])
     {
-      const sourcemap = await getSourcemap(entry);
+      const sourcemap = await getSourcemap(entry, fetch.default);
 
       if (sourcemap)
       {
@@ -214,7 +214,7 @@ function mergeMappings(file: FileCoverage | FileCoverageData, target: FileCovera
   });
 }
 
-async function getSourcemap(entry: CoverageEntry)
+async function getSourcemap(entry: CoverageEntry, fetch: typeof import('node-fetch').default)
 {
   let sourcemap: RawSourceMap;
 

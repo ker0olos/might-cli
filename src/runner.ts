@@ -22,8 +22,6 @@ import { coverage } from './coverage.js';
 
 type Step = import('might-core').Step;
 
-import parallel from 'p-limit';
-
 export type Map = Test[];
 
 type Test = {
@@ -277,7 +275,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         await retry(
           () => page.goto(options.url, { timeout: options.stepTimeout }),
           2500,
-          options.stepTimeout + (60 * 1000 * 1)
+          options.stepTimeout + (60 * 1000 * 2)
         );
       };
 
@@ -558,7 +556,9 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     callback('progress', callbackArgs);
   };
 
-  await Promise.all(map.map((t, index) => parallel(options.parallel)(() => prepTest(t, index))));
+  const parallel = (await import('p-limit')).default(options.parallel);
+
+  await Promise.all(map.map((t, index) => parallel(() => prepTest(t, index))));
 
   // close browsers
   await Promise.all(targets
