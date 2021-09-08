@@ -14,6 +14,8 @@ import { join } from 'path';
 
 import { outputFile } from 'fs-extra';
 
+import fetch from 'node-fetch';
+
 import { SourceMapConsumer, RawSourceMap } from 'source-map';
 
 import convert from 'convert-source-map';
@@ -235,9 +237,7 @@ async function getSourcemap(entry: CoverageEntry)
 
   try
   {
-    const fetch = await import('node-fetch');
-
-    const response = await fetch.default(`${entry.url}.map`);
+    const response = await fetch(`${entry.url}.map`);
 
     if (response.status !== 200)
       throw new Error();

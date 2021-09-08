@@ -22,6 +22,8 @@ import { coverage } from './coverage.js';
 
 type Step = import('might-core').Step;
 
+import parallel from 'p-limit';
+
 export type Map = Test[];
 
 type Test = {
@@ -69,7 +71,7 @@ class MismatchError extends Error
 
 function wait(seconds: number)
 {
-  return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  return new Promise(r => setTimeout(r, seconds * 1000));
 }
 
 function retry(fn: () => Promise<unknown>, delay: number, maxTime: number)
@@ -274,8 +276,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         // go to the web app's url (retry enabled)
         await retry(
           () => page.goto(options.url, { timeout: options.stepTimeout }),
-          1000,
-          options.stepTimeout
+          2500,
+          options.stepTimeout + (60 * 1000 * 1)
         );
       };
 
@@ -555,10 +557,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     // all the browsers are finished
     callback('progress', callbackArgs);
   };
-  
-  const parallel = await import('p-limit');
 
-  await Promise.all(map.map((t, index) => parallel.default(options.parallel)(() => prepTest(t, index))));
+  await Promise.all(map.map((t, index) => parallel(options.parallel)(() => prepTest(t, index))));
 
   // close browsers
   await Promise.all(targets
