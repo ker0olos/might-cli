@@ -4,7 +4,7 @@ import v8toIstanbul from 'v8-to-istanbul';
 
 import { createContext } from 'istanbul-lib-report';
 
-import * as libCoverage from 'istanbul-lib-coverage';
+import libCoverage from 'istanbul-lib-coverage';
 
 import type { FileCoverage, FileCoverageData } from 'istanbul-lib-coverage';
 
@@ -12,13 +12,13 @@ import reports from 'istanbul-reports';
 
 import { join } from 'path';
 
-import { outputFile } from 'fs-extra';
+import fs from 'fs-extra';
 
 import { SourceMapConsumer, RawSourceMap } from 'source-map';
 
 import convert from 'convert-source-map';
 
-import * as nanomatch from 'nanomatch';
+import nanomatch from 'nanomatch';
 
 export type CoverageEntry = {
   url: string,
@@ -37,8 +37,6 @@ export type CoverageEntry = {
 
 export async function coverage(coverageCollection: CoverageEntry[], meta: { name: string }, dir: string, exclude: string[]): Promise<[ number, { name: string, coverage: number, uncoveredLines: number[] }[] ]>
 {
-  const fetch = await import('node-fetch');
-
   const mainMap = libCoverage.createCoverageMap();
 
   const processed: Record<string, ReturnType<typeof v8toIstanbul>> = {};
@@ -55,7 +53,7 @@ export async function coverage(coverageCollection: CoverageEntry[], meta: { name
     
     if (!processed[entryPath])
     {
-      const sourcemap = await getSourcemap(entry, fetch.default);
+      const sourcemap = await getSourcemap(entry);
 
       if (sourcemap)
       {
@@ -94,7 +92,7 @@ export async function coverage(coverageCollection: CoverageEntry[], meta: { name
   
               try
               {
-                await outputFile(join(dir, relative), sourcemap?.sourcesContent?.[id]);
+                await fs.outputFile(join(dir, relative), sourcemap?.sourcesContent?.[id]);
               }
               catch (err)
               {
@@ -214,7 +212,7 @@ function mergeMappings(file: FileCoverage | FileCoverageData, target: FileCovera
   });
 }
 
-async function getSourcemap(entry: CoverageEntry, fetch: typeof import('node-fetch').default)
+async function getSourcemap(entry: CoverageEntry)
 {
   let sourcemap: RawSourceMap;
 
@@ -237,6 +235,8 @@ async function getSourcemap(entry: CoverageEntry, fetch: typeof import('node-fet
 
   try
   {
+    const fetch = (await import('node-fetch')).default;
+
     const response = await fetch(`${entry.url}.map`);
 
     if (response.status !== 200)
