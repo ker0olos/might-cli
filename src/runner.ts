@@ -723,14 +723,12 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
     {
       try
       {
-        if (step.value === 'right')
-          await elem.click({ button: 'right', force: true, timeout: options.stepTimeout });
-        else if (step.value === 'middle')
-          await elem.click({ button: 'middle', force: true, timeout: options.stepTimeout });
-        else if (touchEvents)
-          await elem.tap({ force: true, timeout: options.stepTimeout });
+        await elem.waitForElementState('stable');
+
+        if (touchEvents)
+          await elem.tap({ timeout: options.stepTimeout });
         else
-          await elem.click({ button: 'left', force: true, timeout: options.stepTimeout });
+          await elem.click({ button: step.value, force: true, timeout: options.stepTimeout });
       }
       catch
       {
