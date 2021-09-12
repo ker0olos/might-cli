@@ -726,9 +726,18 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
         await elem.waitForElementState('stable');
 
         if (touchEvents)
-          await elem.tap({ timeout: options.stepTimeout });
+          await elem.tap({
+            force: true,
+            timeout: options.stepTimeout
+          });
         else
-          await elem.click({ button: step.value, force: true, timeout: options.stepTimeout });
+          await elem.click({
+            force: true,
+            button: step.value,
+            timeout: options.stepTimeout,
+            delay: 150,
+            clickCount: 1
+          });
       }
       catch
       {
