@@ -867,10 +867,6 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     if (alt)
       await page.keyboard.up('Alt');
-
-    // blur the element after that because
-    // input caret can ruin tests
-    await elem.evaluate((elem) => elem.blur());
   }
   else if (step.action === 'type')
   {
@@ -901,10 +897,6 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
         // type in the new value
         await page.keyboard.type(step.value);
-
-        // blur the element after that because
-        // input caret can ruin tests
-        await elem.evaluate((elem) => elem.blur());
       }
       catch
       {
