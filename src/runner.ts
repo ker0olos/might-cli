@@ -786,6 +786,10 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
     await page.mouse.move(x0, y0);
     await page.mouse.down({ button: 'left' });
 
+    await page.mouse.move(x1 * 0.25, y1 * 0.25);
+    await page.mouse.move(x1 * 0.5, y1 * 0.5);
+    await page.mouse.move(x1 * 0.85, y1 * 0.85);
+
     await page.mouse.move(x1, y1);
     await page.mouse.up({ button: 'left' });
   }
@@ -809,6 +813,10 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     await page.mouse.move(x0, y0);
     await page.mouse.down({ button: 'left' });
+
+    await page.mouse.move(x1 * 0.25, y1 * 0.25);
+    await page.mouse.move(x1 * 0.5, y1 * 0.5);
+    await page.mouse.move(x1 * 0.85, y1 * 0.85);
 
     await page.mouse.move(x1, y1);
     await page.mouse.up({ button: 'left' });
