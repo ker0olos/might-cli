@@ -389,7 +389,6 @@ async function run(map: Map, config: Config)
         const filename = resolve(sanitize(`might.error.${new Date().toISOString()}.png`));
 
         //  write the difference image to disk
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
         fs.writeFileSync(filename, value.diff);
 
         error = new Error(`${value.message}\n${c.yellow(`Diff Image: ${c.white(filename)}`)}`);
@@ -485,7 +484,6 @@ async function run(map: Map, config: Config)
             if (time >= 15)
               draft(c.bold.blueBright('RUNNING'), c.bold.red(`(${time}s)`), value.title);
             else
-              // eslint-disable-next-line security/detect-object-injection
               draft(c.bold.blueBright(`RUNNING (${animation[frame]})`), value.title);
           }, 500);
         }

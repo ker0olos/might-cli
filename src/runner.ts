@@ -1,5 +1,3 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
-
 import jimp from 'jimp';
 
 import playwright from 'playwright';
@@ -64,7 +62,7 @@ class MismatchError extends Error
     this.diff = diff;
   }
 
-  diff: Buffer
+  diff: Buffer;
 }
 
 function wait(seconds: number)
@@ -369,7 +367,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         });
 
         // mark screenshot as used
-        // eslint-disable-next-line security/detect-object-injection
         screenshots[screenshotPath] = false;
 
         callback('progress', {
@@ -429,7 +426,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           else
           {
             // mark screenshot as used
-            // eslint-disable-next-line security/detect-object-injection
             screenshots[screenshotPath] = false;
 
             callback('progress', {
@@ -544,7 +540,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
     for (const type of targets)
     {
-      // eslint-disable-next-line security/detect-object-injection
       processes.push(runTest(browsers[type], type, test, displayName, screenshotId, callbackWrapper));
     }
 
@@ -562,7 +557,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
   // close browsers
   await Promise.all(targets
-    // eslint-disable-next-line security/detect-object-injection
     .map(async(key) => await browsers[key].close()));
 
   // process the coverage of all the tests
@@ -587,7 +581,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
   // filter screenshots that were used to only get the unused ones
   const unused = Object.keys(screenshots)
-    // eslint-disable-next-line security/detect-object-injection
     .filter(key => screenshots[key] === true);
 
   // cleaning unused screenshots
@@ -596,7 +589,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   {
     for (let i = 0; i < unused.length; i++)
     {
-      // eslint-disable-next-line security/detect-object-injection
       await fs.unlink(unused[i]);
     }
   }
@@ -850,7 +842,6 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     for (let i = 0; i < split.length; i++)
     {
-      // eslint-disable-next-line security/detect-object-injection
       const key = split[i];
 
       if (key !== 'Shift' && key !== 'Control' && key !== 'Alt')

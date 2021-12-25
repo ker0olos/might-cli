@@ -1,5 +1,3 @@
-/* eslint-disable security/detect-object-injection */
-
 import v8toIstanbul from 'v8-to-istanbul';
 
 import { createContext } from 'istanbul-lib-report';
@@ -70,7 +68,6 @@ export async function coverage(coverageCollection: CoverageEntry[], meta: { name
             if (path.includes('://'))
               relative = path.substring(path.indexOf('://') + 3);
 
-            // eslint-disable-next-line security/detect-non-literal-regexp
             relative = relative.replace(new RegExp(process.env.PWD, 'g'), '');
 
             // ignore project
@@ -120,7 +117,6 @@ export async function coverage(coverageCollection: CoverageEntry[], meta: { name
     {
       key = key
         .replace(/\\/g, '')
-        // eslint-disable-next-line security/detect-non-literal-regexp
         .replace(new RegExp(process.env.PWD, 'g'), '');
 
       // ignore project

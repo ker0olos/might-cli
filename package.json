@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "might-cli",
-  "version": "3.1.6",
+  "version": "3.1.7",
   "description": "A no-code solution for performing end-to-end tests",
   "scripts": {
     "prepare": "yarn build",
@@ -73,7 +73,6 @@
     "@typescript-eslint/eslint-plugin": "^5.8.0",
     "@typescript-eslint/parser": "^5.8.0",
     "eslint": "^8.5.0",
-    "eslint-plugin-security": "^1.4.0",
     "typescript": "^4.5.4"
   }
 }

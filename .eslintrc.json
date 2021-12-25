@@ -5,12 +5,10 @@
   },
   "parser": "@typescript-eslint/parser",
   "plugins": [
-    "security",
     "@typescript-eslint"
   ],
   "extends": [
     "eslint:recommended",
-    "plugin:security/recommended",
     "plugin:@typescript-eslint/recommended"
   ],
   "rules": {
