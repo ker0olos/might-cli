@@ -9,7 +9,9 @@ A no-code method to perform and manage end-to-end tests, handling all of the mes
 [Might UI](https://github.com/ker0olos/Might) is an easy way to create, manage and edit tests, and [Might CLI](https://github.com/ker0olos/might-cli) runs those tests.
 
 ### Installation
-`npm i -D might-cli`
+`npm install --save-dev might-cli`
+
+`yarn add --dev might-cli`
 
 ### Migrations
 
@@ -18,7 +20,8 @@ A no-code method to perform and manage end-to-end tests, handling all of the mes
 
 ### Usage
 
-`npx might`
+`npx might`  
+`yarn might`
 
 When you run the command for the first time, it will walk you through all the things you need to configure:
 
@@ -36,7 +39,7 @@ When you run the command for the first time, it will walk you through all the th
 
 Now you have to create a few tests to run, tests are described inside a file called `might.map.json`, the easiest way to create tests is with the help of [Might UI](https://github.com/ker0olos/Might).
 
-Run `npx might -m` to open the UI regardless of it's installed or not;
+Run `npx might -m` or `yarn might -m` to open the UI regardless of it's installed or not;
 
 > If you really want to write tests manually (not recommended) look at
 > [map.md](https://github.com/ker0olos/might-cli/blob/main/map.md).
@@ -58,7 +61,7 @@ When the test is performed for a second time, a new screenshot is compared with 
 
 ---
 
-Run `npx might -h` to see additional information about how to run specific tests and skip the rest, how to update failed tests, how to control the amount of parallel tests, and how to get a coverage report.
+Run `npx might -h` or `yarn might -h` to see additional information about how to run specific tests and skip the rest, how to update failed tests, how to control the amount of parallel tests, and how to get a coverage report.
 
 ---
 
