@@ -278,14 +278,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           
         page = await context.newPage();
 
-        // start collecting coverage
-        if (options.coverage && browserType === 'chromium')
-        {
-          log('code coverage collection started');
-
-          await page.coverage.startJSCoverage();
-        }
-
         log('forcing headers "x-forwarded-for"="8.8.8.8" "accept-language"="en-US,en;q=0.5"');
 
         // an easy attempt to make tests more consistent
@@ -295,6 +287,14 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           'X-Forwarded-For': '8.8.8.8',
           'Accept-Language': 'en-US,en;q=0.5'
         });
+
+        // start collecting coverage
+        if (options.coverage && browserType === 'chromium')
+        {
+          log('code coverage collection started');
+
+          await page.coverage.startJSCoverage();
+        }
 
         log(`going to "${options.url}"`);
 
@@ -816,16 +816,18 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
         if (touchEvents)
         {
-          log(`tapping "element"=${i} "force"=true`);
+          log(`tapping "element"=${i} "force"=true "state"="stable"`);
           
           await elem.tap({
             force: true,
             timeout: options.stepTimeout
           });
+
+          log(`tapped "element"=${i}`);
         }
         else
         {
-          log(`clicking "element"=${i} "force"=true "button"="${step.value}" "delay"="150ms" "click-count"=1`);
+          log(`clicking "element"=${i} "force"=true "state"="stable" "button"="${step.value}" "delay"="150ms" "click-count"=1`);
 
           await elem.click({
             force: true,
@@ -834,6 +836,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
             delay: 150,
             clickCount: 1
           });
+
+          log(`clicked "element"=${i}`);
         }
       }
       catch (err)
@@ -893,6 +897,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     await page.mouse.move(x1, y1);
     await page.mouse.up({ button: 'left' });
+
+    log('drag preformed');
   }
   else if (step.action === 'swipe')
   {
@@ -925,6 +931,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     await page.mouse.move(x1, y1);
     await page.mouse.up({ button: 'left' });
+
+    log('swipe preformed');
   }
   else if (step.action === 'keyboard')
   {
@@ -966,6 +974,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
         log(`key pressing "${selector}" "shift"=${shift} "ctrl"=${ctrl} "alt"=${alt} "key"="${key}"`);
 
         await page.keyboard.press(key);
+
+        log(`key pressed "key"="${key}"`);
       }
     }
 
@@ -1021,6 +1031,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
         // type in the new value
         await page.keyboard.type(step.value);
+
+        log(`typed "element"=${i} "value"="${step.value}"`);
       }
       catch (err)
       {
