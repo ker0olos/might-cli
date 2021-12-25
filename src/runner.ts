@@ -449,8 +449,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       {
         try
         {
-          log('comparing Screenshots the page using looks-same');
-
           // compare the new screenshot
           const img1 = await jimp.read(await screenshot({
             full,
@@ -464,13 +462,15 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           const [ x2, y2 ] = [ img2.getWidth(), img2.getHeight() ];
 
           log(`screenshots sizes original=(${x1}x${y1}) new=(${x2}x${y2})`);
-
+          
           if (x1 !== x2 || y1 !== y2)
           {
             log('screenshot sizes mismatched');
 
             throw new Error(`Error: Screenshots have different sizes (${x2}x${y2}) (${x1}x${y1})`);
           }
+
+          log('comparing screenshots using "looks-same"');
 
           const diff = await difference(
             img1, img2,
@@ -690,7 +690,7 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
       await wait(step.value);
 
-      log('waited concluded');
+      log('waiting concluded');
     }
     // wait for a selector
     else
