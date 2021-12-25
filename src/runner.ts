@@ -235,8 +235,6 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         logs[displayName] = logs[displayName] ?? {};
         logs[displayName][browserType] = logs[displayName][browserType] ?? [];
 
-        console.log(content);
-
         logs[displayName][browserType].push(content);
       };
 
