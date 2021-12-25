@@ -10,7 +10,7 @@ import { join } from 'path';
 
 import fs from 'fs-extra';
 
-import { stepsToString } from 'might-core';
+import { stepsToString, stringifyStep } from 'might-core';
 
 import screenshot from './screenshot.js';
 
@@ -55,9 +55,9 @@ type Options = {
 
 class MismatchError extends Error
 {
-  constructor(message: string, diff: Buffer)
+  constructor(diff: Buffer)
   {
-    super(message);
+    super();
 
     this.diff = diff;
   }
@@ -101,7 +101,7 @@ function retry(fn: () => Promise<unknown>, delay: number, maxTime: number)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function runner(options: Options, callback: (type: 'started' | 'coverage' | 'progress' | 'error' | 'done', value: any) => void): Promise<void>
+export async function runner(options: Options, callback: (type: 'started' | 'coverage' | 'progress' | 'error' | 'done', value: any, logs?: string[]) => void): Promise<void>
 {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
@@ -142,6 +142,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   let failed = 0;
 
   const coverageCollection: import('./coverage.js').CoverageEntry[] = [];
+
+  const logs: Record<string, Record<string, string[]>> = {};
 
   // skipping broken tests
   // and filtering targets
@@ -218,7 +220,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   // announce the amount of tests that are pending
   callback('started', map.length);
 
-  const runTest = async(browser: playwright.Browser, browserType: string, test: Test, displayName: string, screenshotId: string, callback: (type: 'progress' | 'error', args: unknown) => void) =>
+  const runTest = async(browser: playwright.Browser, browserType: string, test: Test, displayName: string, screenshotId: string, callback: (type: 'progress' | 'error', args: unknown, logs?: string[]) => void) =>
   {
     try
     {
@@ -228,6 +230,19 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       let page: playwright.Page;
 
+      const log = (content: string) =>
+      {
+        logs[displayName] = logs[displayName] ?? {};
+        logs[displayName][browserType] = logs[displayName][browserType] ?? [];
+
+        console.log(content);
+
+        logs[displayName][browserType].push(content);
+      };
+
+      log(`[${displayName}] "browser-type"="${browserType}"`);
+      log(`[${displayName}] "steps"="${stepsToString(test.steps, { pretty: true })}"`);
+
       // this will result in the page reloading (closing all previous steps and coverage)
       const updateContext = async(contextOptions?: playwright.BrowserContextOptions) =>
       {
@@ -235,8 +250,14 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
         if (page)
         {
+          log('reloading the page to apply context changes');
+
           await page.context().close();
           await page.close();
+        }
+        else
+        {
+          log('creating a new blank page');
         }
 
         // create new page
@@ -254,12 +275,20 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           locale: 'en-US',
           timezoneId: 'America/Los_Angeles'
         });
+
+        log(`page context is "colorScheme"="light" "touch"=${touch} "width"=${options.viewport.width} "height"=${options.viewport.height} "locale"="en-US"`);
           
         page = await context.newPage();
 
         // start collecting coverage
         if (options.coverage && browserType === 'chromium')
+        {
+          log('code coverage collection started');
+
           await page.coverage.startJSCoverage();
+        }
+
+        log('forcing headers "x-forwarded-for"="8.8.8.8" "accept-language"="en-US,en;q=0.5"');
 
         // an easy attempt to make tests more consistent
         // through different machines
@@ -268,6 +297,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           'X-Forwarded-For': '8.8.8.8',
           'Accept-Language': 'en-US,en;q=0.5'
         });
+
+        log(`going to "${options.url}"`);
 
         // go to the web app's url (retry enabled)
         await retry(
@@ -279,24 +310,36 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       await updateContext();
 
-      let err: Error;
+      const errors: Error[] = [];
 
       page.on('crash', () =>
       {
+        log('page crashed');
+
         console.warn('Browser pages might crash if they try to allocate too much memory.');
         console.warn('The most common way to deal with crashes is to catch an exception.');
 
-        err = new Error('Page crashed');
+        errors.push(new Error('Page crashed'));
       });
 
-      page.on('pageerror', e => err = e);
+      page.on('pageerror', err =>
+      {
+        log(`page error: ${err.name} ${err.message} ${err.stack}`);
 
-      page.on('requestfailed', e => err = new Error(`${e.method()} ${e.url()} ${e.failure().errorText}`));
+        errors.push(err);
+      });
+
+      page.on('requestfailed', err =>
+      {
+        log(`page request error: ${err.method()} ${err.url()} ${err.failure().errorText}`);
+
+        errors.push(new Error(`${err.method()} ${err.url()} ${err.failure().errorText}`));
+      });
       
       // run the steps
       for (const step of test.steps)
       {
-        const returnValue = await runStep(page, selector, step, touch, options);
+        const returnValue = await runStep(page, selector, step, touch, log, options);
     
         if (step.action === 'viewport')
         {
@@ -325,6 +368,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           // update just the viewport
           else
           {
+            log('resizing the page instead since only the viewport size changed and not the context');
+            
             await page.setViewportSize({
               width: width ?? options.viewport.width,
               height: height ?? options.viewport.height
@@ -340,11 +385,13 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       // all steps were executed
 
-      if (err)
+      for (const err of errors)
       {
-        if (options.pageErrorIgnore.find(x => err.message?.includes?.(x)))
+        const ignore = options.pageErrorIgnore.find(x => err.message?.includes?.(x));
+
+        if (ignore)
         {
-          //
+          log(`ignoring error "${err.message}"`);
         }
         else
         {
@@ -355,6 +402,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       const screenshotPath = join(options.screenshotsDir, `${screenshotId}.${browserType}.png`);
 
       const screenshotExists = await fs.pathExists(screenshotPath);
+      
+      log(`screenshot file found at "${screenshotPath}"`);
 
       // new first-run test or a forced update
       const update = async(force?: boolean) =>
@@ -381,16 +430,22 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       if (!screenshotExists)
       {
+        log('Screenshot-ing the page new=true');
+
         await update();
       }
       else if (options.target && options.update)
       {
+        log(`screenshot-ing the page "force"=true "new"=${screenshotExists}`);
+
         await update(true);
       }
       else
       {
         try
         {
+          log('comparing Screenshots the page using looks-same');
+
           // compare the new screenshot
           const img1 = await jimp.read(await screenshot({
             full,
@@ -403,8 +458,12 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           const [ x1, y1 ] = [ img1.getWidth(), img1.getHeight() ];
           const [ x2, y2 ] = [ img2.getWidth(), img2.getHeight() ];
 
+          log(`screenshots sizes original=(${x1}x${y1}) new=(${x2}x${y2})`);
+
           if (x1 !== x2 || y1 !== y2)
           {
+            log('screenshot sizes mismatched');
+
             throw new Error(`Error: Screenshots have different sizes (${x2}x${y2}) (${x1}x${y1})`);
           }
 
@@ -416,15 +475,16 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
           if (!diff.same)
           {
+            log(`screenshots mismatched "differences"=${diff.differences}`);
+
             // throw error if they don't match each other
 
-            throw new MismatchError(
-              `Error: Found ${diff.differences} difference`,
-              await diff.diffImage
-            );
+            throw new MismatchError(await diff.diffImage);
           }
           else
           {
+            log('screenshots matched');
+
             // mark screenshot as used
             screenshots[screenshotPath] = false;
 
@@ -438,9 +498,14 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         }
         catch (e)
         {
+          if (e?.message)
+            log(`Error: ${e?.message}`);
+
           if (options.update)
           {
             failed = failed + 1;
+            
+            log('ignoring the test fail and updating its screenshot');
 
             await update(true);
           }
@@ -454,12 +519,16 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       // stop collecting coverage
       if (options.coverage && browserType === 'chromium')
       {
+        log('stopped code coverage collection');
+
         const coverage = await page.coverage.stopJSCoverage();
           
         coverageCollection.push(...coverage);
       }
 
       // close the page and context
+
+      log('closing the page');
         
       await page.context().close();
       await page.close();
@@ -474,7 +543,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         state: 'failed'
       });
 
-      callback('error', e);
+      callback('error', e, logs[displayName][browserType]);
     }
   };
 
@@ -514,12 +583,12 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     let callbackArgs: any;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const callbackWrapper = (type: 'progress' | 'error', args: any) =>
+    const callbackWrapper = (type: 'progress' | 'error', args: any, logs: string[]) =>
     {
       if (type === 'error')
       {
         callback('progress', callbackArgs);
-        callback('error', args);
+        callback('error', args, logs);
       }
       else if (
         type === 'progress' &&
@@ -603,21 +672,31 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   });
 }
 
-async function runStep(page: playwright.Page, selector: string, step: Step, touchEvents: boolean, options: Options)
+async function runStep(page: playwright.Page, selector: string, step: Step, touchEvents: boolean, log: (content: string) => void, options: Options)
 {
+  log(`stating step: "${step.action}"="${step.value}" "${stringifyStep(step, { pretty: true })}"`);
+  
   if (step.action === 'wait')
   {
     // wait a duration of time
     if (typeof step.value === 'number')
     {
+      log(`waiting ${step.value} seconds`);
+
       await wait(step.value);
+
+      log('waited concluded');
     }
     // wait for a selector
     else
     {
+      log(`waiting for selector ${step.value}`);
+
       await page.waitForSelector(step.value, {
         timeout: options.stepTimeout
       });
+
+      log('waiting concluded');
 
       // so there's no need to select the same element again after waiting
       return step.value;
@@ -654,6 +733,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
     if (value.includes('f'))
       full = true;
 
+    log(`setting a new viewport "width"=${width} "height"=${height} "touch"=${touch} "full"=${full}`);
+
     return {
       width,
       height,
@@ -667,12 +748,16 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     if (url === 'back')
     {
+      log('going back in history');
+
       await page.goBack({
         timeout: options.stepTimeout
       });
     }
     else if (url === 'forward')
     {
+      log('going forward in history');
+
       await page.goForward({
         timeout: options.stepTimeout
       });
@@ -681,6 +766,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
     {
       if (url.startsWith('/'))
         url = `${options.url}${url}`;
+
+      log(`going to ${url}`);
 
       await page.goto(url, {
         timeout: options.stepTimeout
@@ -695,34 +782,53 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     if (name === 'prefers-color-scheme' && [ 'light', 'dark', 'no-preference' ].includes(value))
     {
+      log(`emulating CSS media type "prefers-color-scheme" to "${value}"`);
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await page.emulateMedia({ colorScheme: (value as any) });
     }
   }
   else if  (step.action === 'select')
   {
+    log(`setting the current selector to "${step.value}"`);
+
     return step.value;
   }
   else if (step.action === 'hover')
   {
+    log(`hovering over "${selector}"`);
+
     await page.hover(selector);
   }
   else if (step.action === 'click')
   {
+    log(`clicking on all elements that match "${selector}"`);
+
     const elements = await page.$$(selector);
 
-    for (const elem of elements)
+    log(`found "${elements.length}" elements matching "${selector}"`);
+
+    for (let i = 0; i < elements.length; i++)
     {
+      const elem = elements[i];
+
       try
       {
         await elem.waitForElementState('stable');
 
         if (touchEvents)
+        {
+          log(`tapping "element"=${i} "force"=true`);
+          
           await elem.tap({
             force: true,
             timeout: options.stepTimeout
           });
+        }
         else
+        {
+          log(`clicking "element"=${i} "force"=true "button"="${step.value}" "delay"="150ms" "click-count"=1`);
+
           await elem.click({
             force: true,
             button: step.value,
@@ -730,10 +836,11 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
             delay: 150,
             clickCount: 1
           });
+        }
       }
-      catch
+      catch (err)
       {
-        //
+        log(`failed at clicking "element"=${i} with "${err?.message ?? err}"`);
       }
 
       await page.mouse.move(-1, -1);
@@ -745,6 +852,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
     // (relative to selected element)
 
     let [ x1, y1 ] = step.value;
+
+    log(`dragging ${selector} to "x"=${x1} "y"=${y1}`);
 
     const elem = await page.$(selector);
 
@@ -775,6 +884,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
     else
       y1 = parseInt(y1);
 
+    log(`dragging with "button"="left" from "x0"=${x0} "y0"=${y0} to "x1"=${x1} "y1"=${y1}`);
+
     await page.mouse.move(x0, y0);
     await page.mouse.down({ button: 'left' });
 
@@ -793,6 +904,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     let [ x0, y0, x1, y1 ] = step.value;
 
+    log(`swiping from "x0"=${x0} "y0"=${y0} to "x1"=${x1} "y1"=${y1}`);
+
     const { width, height } = page.viewportSize();
 
     // viewport unit (v) (relative to viewport height)
@@ -802,6 +915,8 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
 
     y0 = y0.endsWith?.('v') ? (parseInt(y0) / 100) * height : parseInt(y0);
     y1 = y1.endsWith?.('v') ? (parseInt(y1) / 100) * height : parseInt(y1);
+
+    log(`swiping with "button"="left" from "x0"=${x0} "y0"=${y0} to "x1"=${x1} "y1"=${y1}`);
 
     await page.mouse.move(x0, y0);
     await page.mouse.down({ button: 'left' });
@@ -817,17 +932,21 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
   {
     const split: string[] = step.value.replace('++', '+NumpadAdd').split('+');
 
-    const elem = await page.$(selector);
-
-    // make sure the selected element is focused
-    await elem.focus();
-
     const
       shift = split.includes('Shift'),
       ctrl = split.includes('Control'),
       alt = split.includes('Alt');
 
+    log(`key pressing on "${selector}"`);
+
+    const elem = await page.$(selector);
+
+    // make sure the selected element is focused
+    await elem.focus();
+
     // hold modifier keys
+
+    log('prepping pre-specified modifier keys');
 
     if (shift)
       await page.keyboard.down('Shift');
@@ -845,10 +964,16 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
       const key = split[i];
 
       if (key !== 'Shift' && key !== 'Control' && key !== 'Alt')
+      {
+        log(`key pressing "${selector}" "shift"=${shift} "ctrl"=${ctrl} "alt"=${alt} "key"="${key}"`);
+
         await page.keyboard.press(key);
+      }
     }
 
     // release modifier keys
+
+    log('releasing any pre-specified modifier keys');
 
     if (shift)
       await page.keyboard.up('Shift');
@@ -861,18 +986,28 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
   }
   else if (step.action === 'type')
   {
+    log(`typing into all elements that match "${selector}"`);
+
     const elements = await page.$$(selector);
 
-    for (const elem of elements)
+    log(`found "${elements.length}" elements matching "${selector}"`);
+
+    for (let i = 0; i < elements.length; i++)
     {
+      const elem = elements[i];
+
       try
       {
+        log(`evaluating "element"=${i} elements matching "${selector}"`);
+
         const { current, disabled } = await elem.evaluate(elem => ({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           current: (elem as any).value,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           disabled: (elem as any).disabled
         }));
+
+        log(`evaluated "element"=${i} "current"="${current}" "disabled"=${disabled}`);
 
         if (disabled)
           continue;
@@ -889,9 +1024,9 @@ async function runStep(page: playwright.Page, selector: string, step: Step, touc
         // type in the new value
         await page.keyboard.type(step.value);
       }
-      catch
+      catch (err)
       {
-        //
+        log(`failed at typing "element"=${i} with "${err?.message ?? err}"`);
       }
     }
   }

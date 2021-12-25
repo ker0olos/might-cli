@@ -372,7 +372,7 @@ async function run(map: Map, config: Config)
     pageErrorIgnore: config.pageErrorIgnore,
     coverageExclude: config.coverageExclude
   },
-  (type, value) =>
+  (type, value, logs) =>
   {
     // the amount of tasks that are going to run
     // if (type === 'started')
@@ -382,20 +382,22 @@ async function run(map: Map, config: Config)
     if (type === 'error')
     {
       let error: Error;
+      
+      const filename = resolve(sanitize(`might.error.${new Date().toISOString()}`));
+
+      fs.writeFileSync(`${filename}.log`, logs.map((s, i) => `[${i}] ${s}`).join('\n'));
 
       // if there's a property called diff that means that it's a mismatch error
       if (value.diff)
       {
-        const filename = resolve(sanitize(`might.error.${new Date().toISOString()}.png`));
-
         //  write the difference image to disk
-        fs.writeFileSync(filename, value.diff);
+        fs.writeFileSync(`${filename}.png`, value.diff);
 
-        error = new Error(`${value.message}\n${c.yellow(`Diff Image: ${c.white(filename)}`)}`);
+        error = new Error(`${c.yellow('Diff Image:')} ${filename}.png\n${c.yellow('Error Log:')} ${filename}.log\n\n${value?.message ?? value}`);
       }
       else
       {
-        error = new Error(value.message || value);
+        error = new Error(`${c.yellow('Error Log:')} ${filename}.log\n\n${value?.message ?? value}`);
       }
 
       throw error;
