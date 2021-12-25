@@ -238,8 +238,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         logs[displayName][browserType].push(content);
       };
 
-      log(`[${displayName}] "browser-type"="${browserType}"`);
-      log(`[${displayName}] "steps"="${stepsToString(test.steps, { pretty: true })}"`);
+      log(`[${displayName}] [${browserType}]`);
+      log(`[${displayName}] ${stepsToString(test.steps, { pretty: true })}`);
 
       // this will result in the page reloading (closing all previous steps and coverage)
       const updateContext = async(contextOptions?: playwright.BrowserContextOptions) =>
@@ -309,6 +309,13 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       await updateContext();
 
       const errors: Error[] = [];
+
+      page.on('console', msg =>
+      {
+        const { url, lineNumber, columnNumber } = msg.location();
+
+        log(`[console] [${msg.type}] ${msg.text} ${url}:${lineNumber}:${columnNumber}`);
+      });
 
       page.on('crash', () =>
       {
