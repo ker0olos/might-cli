@@ -70,6 +70,8 @@ async function readConfig(): Promise<Config>
     if (quiet)
       return;
 
+    console.log();
+
     console.log(c.bold.yellow('? Config is missing or corrupted.'));
 
     const newConfig = await prompts({
@@ -155,6 +157,8 @@ async function readMap(dialog: boolean): Promise<Map>
     if (!dialog)
       return;
 
+    console.log();
+
     console.log(c.bold.yellow('Map is missing or corrupted.'));
     console.log(c.bold('Make sure you have a file called "might.map.json" in the root of the project\'s directory.'));
 
@@ -175,6 +179,8 @@ async function main()
   // open help menu
   if (argv.help || argv.h)
   {
+    console.log();
+
     console.log(c.bold.cyan('--help, -h'), '       Opens this help menu.');
     console.log(c.bold.cyan('--map, -m, -x'), '    Opens Might UI (even if not installed).');
     console.log(c.bold.cyan('--quiet, -q'), '      Disables all animations.');
@@ -198,6 +204,10 @@ async function main()
   // opens might-ui (even if not installed because npx is cool)
   else if (argv.map || argv.m || argv.x)
   {
+    console.log(c.grey('$ npx might-ui'));
+
+    console.log();
+
     running = spawn('npx might-ui', { shell: true, cwd: process.cwd() });
 
     running.stdout.on('data', (data) => console.log(data.toString()));
@@ -210,6 +220,8 @@ async function main()
   // display version number
   else if (argv.version || argv.v)
   {
+    console.log();
+
     const json = await fs.readJSON(join(__dirname, '../package.json'));
 
     console.log(`v${json.version}`);
@@ -217,17 +229,6 @@ async function main()
   // start runner
   else
   {
-    if (quiet)
-    {
-      console.log(c.magenta('Might discovered it\'s running inside a CI environment, it will be quieter.\n'));
-    }
-    else if (argv.q || argv.quiet)
-    {
-      quiet = true;
-      
-      console.log(c.magenta('Might will be quieter.\n'));
-    }
-
     // read the config file
     const config = await readConfig();
 
@@ -245,12 +246,29 @@ async function main()
       throw new Error(`${c.bold('Incorrect "targets":')} the supported browsers are [ "chromium", "firefox", "webkit" ]`);
     }
 
-    // spawn the start command
-    if (typeof config.startCommand === 'string' && config.startCommand.length)
-      start(config.startCommand);
-
     // read the map file
     const map = await readMap(true);
+
+    // spawn the start command
+    if (typeof config.startCommand === 'string' && config.startCommand.length)
+    {
+      console.log(c.grey(`$ ${config.startCommand}`));
+      
+      start(config.startCommand);
+    }
+
+    console.log();
+
+    if (quiet)
+    {
+      console.log(c.magenta('Might discovered it\'s running inside a CI environment, it will be quieter.\n'));
+    }
+    else if (argv.q || argv.quiet)
+    {
+      quiet = true;
+        
+      console.log(c.magenta('Might will be quieter.\n'));
+    }
 
     await run(map, config);
   }
@@ -679,9 +697,6 @@ process.on('SIGINT', () =>
 {
   try
   {
-    // add new line
-    console.log();
-
     // setup draftlog
     draftlog.into(console);
 
