@@ -129,7 +129,9 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   if (!map)
   {
     callback('error', {
-      message: 'Error: Unable to load map file'
+      error: {
+        message: 'Error: Unable to load map file'
+      }
     });
 
     return;
@@ -220,7 +222,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
   // announce the amount of tests that are pending
   callback('started', map.length);
 
-  const runTest = async(browser: playwright.Browser, browserType: string, test: Test, displayName: string, screenshotId: string, callback: (type: 'progress' | 'error', args: unknown, logs?: string[]) => void) =>
+  const runTest = async(browser: playwright.Browser, browserType: string, test: Test, displayName: string, screenshotId: string, callbackWrapper: (type: 'progress' | 'error', args: unknown, logs?: string[]) => void) =>
   {
     try
     {
@@ -411,7 +413,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       log(`screenshot file found at "${screenshotPath}"`);
 
       // new first-run test or a forced update
-      const update = async(force?: boolean) =>
+      const update = async(diff?: Buffer, force?: boolean) =>
       {
         // take a new screenshot and save it to disk
         await screenshot({
@@ -423,7 +425,8 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
         // mark screenshot as used
         screenshots[screenshotPath] = false;
 
-        callback('progress', {
+        callbackWrapper('progress', {
+          diff,
           force,
           title: displayName,
           type: targets.length > 1 ? browserType : undefined,
@@ -435,20 +438,16 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
       if (!screenshotExists)
       {
-        log('Screenshot-ing the page new=true');
+        log('screenshot-ing the page new=true');
 
         await update();
-      }
-      else if (options.target && options.update)
-      {
-        log(`screenshot-ing the page "force"=true "new"=${screenshotExists}`);
-
-        await update(true);
       }
       else
       {
         try
         {
+          log(`screenshot-ing the page "new"=${screenshotExists}`);
+
           // compare the new screenshot
           const img1 = await jimp.read(await screenshot({
             full,
@@ -480,11 +479,20 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
 
           if (!diff.same)
           {
-            log(`screenshots mismatched "differences"=${diff.differences}`);
+            if (options.update)
+            {
+              failed = failed + 1;
 
-            // throw error if they don't match each other
-
-            throw new MismatchError(await diff.diffImage);
+              await update(await diff.diffImage, true);
+            }
+            else
+            {
+              log(`screenshots mismatched "differences"=${diff.differences}`);
+  
+              // throw error if they don't match each other
+  
+              throw new MismatchError(await diff.diffImage);
+            }
           }
           else
           {
@@ -493,7 +501,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
             // mark screenshot as used
             screenshots[screenshotPath] = false;
 
-            callback('progress', {
+            callbackWrapper('progress', {
               title: displayName,
               state: 'passed'
             });
@@ -506,18 +514,7 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
           if (e?.message)
             log(`Error: ${e?.message}`);
 
-          if (options.update)
-          {
-            failed = failed + 1;
-            
-            log('ignoring the test fail and updating its screenshot');
-
-            await update(true);
-          }
-          else
-          {
-            throw e;
-          }
+          throw e;
         }
       }
 
@@ -538,17 +535,17 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
       await page.context().close();
       await page.close();
     }
-    catch (e)
+    catch (err)
     {
       // test failed
 
-      callback('progress', {
+      callbackWrapper('progress', {
         title: displayName,
         type: targets.length > 1 ? browserType : undefined,
         state: 'failed'
       });
 
-      callback('error', e, logs[displayName][browserType]);
+      callbackWrapper('error', err, logs[displayName][browserType]);
     }
   };
 
@@ -588,12 +585,15 @@ export async function runner(options: Options, callback: (type: 'started' | 'cov
     let callbackArgs: any;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const callbackWrapper = (type: 'progress' | 'error', args: any, logs: string[]) =>
+    const callbackWrapper = (type: 'progress' | 'error', args: any, logs?: string[]) =>
     {
       if (type === 'error')
       {
         callback('progress', callbackArgs);
-        callback('error', args, logs);
+        callback('error', {
+          title: displayName,
+          error: args
+        }, logs);
       }
       else if (
         type === 'progress' &&

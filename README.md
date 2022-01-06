@@ -1,10 +1,10 @@
 [![npm (tag)](https://img.shields.io/npm/v/might-cli/latest)](http://npmjs.com/package/might-cli)
 
-End-to-end testing can get very complicated and overwhelming; especially if you need to start testing huge apps, that would take a lot of time and afford, and will be boring and repetitive.
+End-to-end frontend testing can get very complicated and overwhelming; especially if you need to start testing huge apps, that would take a lot of time and afford, and will be boring and repetitive.
 
 ### The Solution
 
-A no-code method to perform and manage end-to-end tests, handling all of the mess in the background.
+A no-code method to perform and manage frontend tests, handling all of the mess in the background.
 
 [Might UI](https://github.com/ker0olos/Might) is an easy way to create, manage and edit tests, and [Might CLI](https://github.com/ker0olos/might-cli) runs those tests.
 

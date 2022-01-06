@@ -115,7 +115,7 @@ async function readConfig(): Promise<Config>
         width: null,
         height: null
       },
-      titleBasedScreenshots: false,
+      titleBasedScreenshots: true,
       parallelTests: 3,
       defaultTimeout: 25000,
       tolerance: 2.5,
@@ -392,30 +392,29 @@ async function run(map: Map, config: Config)
   },
   (type, value, logs) =>
   {
-    // the amount of tasks that are going to run
-    // if (type === 'started')
-    //   length = value;
-
     // an error occurred during a test
     if (type === 'error')
     {
       let error: Error;
+
+      const name = config.titleBasedScreenshots ? `${value.title}-` : '';
+      const date = new Date().toISOString();
       
-      const filename = resolve(sanitize(`might.error.${new Date().toISOString()}`));
+      const filename = resolve(sanitize(`might.error.${name}${date}`));
 
       fs.writeFileSync(`${filename}.log`, logs.map((s, i) => `[${i}] ${s}`).join('\n'));
 
       // if there's a property called diff that means that it's a mismatch error
-      if (value.diff)
+      if (value.error?.diff)
       {
         //  write the difference image to disk
-        fs.writeFileSync(`${filename}.png`, value.diff);
+        fs.writeFileSync(`${filename}.png`, value.error.diff);
 
-        error = new Error(`${c.yellow('Diff Image:')} ${filename}.png\n${c.yellow('Error Log:')} ${filename}.log\n\n${value?.message ?? value}`);
+        error = new Error(`${c.yellow('Diff Image:')} ${filename}.png\n${c.yellow('Error Log:')} ${filename}.log\n\n${value.error.message ?? value.error}`);
       }
       else
       {
-        error = new Error(`${c.yellow('Error Log:')} ${filename}.log\n\n${value?.message ?? value}`);
+        error = new Error(`${c.yellow('Error Log:')} ${filename}.log\n\n${value.error?.message ?? value.error ?? value}`);
       }
 
       throw error;
@@ -520,12 +519,19 @@ async function run(map: Map, config: Config)
 
         const type = value.type !== undefined ? ` on ${value.type}` : '';
         
-        let reason = '(NEW)';
+        const name = config.titleBasedScreenshots ? `${value.title}-` : '';
+        const date = new Date().toISOString();
+        
+        const filename = resolve(sanitize(`might.diff.${name}${date}`));
 
+        let reason = '(NEW)';
+        
         if (updateFailed && value.force)
           reason = c.red(`(FAILED${type})`);
         else if (value.force)
           reason = '(FORCED)';
+        
+        fs.writeFileSync(`${filename}.png`, value.diff);
 
         running[value.id].draft(c.bold.yellow(`UPDATED ${reason} (${time}s)`), value.title);
       }

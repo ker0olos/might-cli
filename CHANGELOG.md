@@ -1,3 +1,11 @@
+## 4.0.0
+
+- tests now always leave behind a diff image when updated
+
+### Breaking changes
+  - `titleBasedScreenshots` is now `true` by default for new configs
+  - include titles in error logs and diff images filenames when `titleBasedScreenshots` is `on`
+
 ## 3.2.0
 
 ### Error logs

@@ -1,8 +1,8 @@
 {
   "type": "module",
   "name": "might-cli",
-  "version": "3.2.1",
-  "description": "A no-code solution for performing end-to-end tests",
+  "version": "4.0.0",
+  "description": "A no-code solution for performing frontend tests",
   "scripts": {
     "prepare": "yarn build",
     "build": "rm -rf build && mkdir build && yarn tsc --removeComments -p tsconfig.json",
@@ -25,12 +25,20 @@
   },
   "homepage": "https://github.com/ker0olos/might-cli#readme",
   "keywords": [
+    "test",
     "testing",
     "coverage",
     "coverage-reports",
-    "end-to-end-testing",
+    "ui-test",
     "ui-testing",
+    "ui-test-automation",
+    "ui-testing-automation",
+    "front-end-test",
     "front-end-testing",
+    "frontend-test-automation",
+    "frontend-testing-automation",
+    "end-to-end-test",
+    "end-to-end-testing",
     "end-to-end-test-automation",
     "end-to-end-testing-interface"
   ],
