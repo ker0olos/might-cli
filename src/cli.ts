@@ -531,7 +531,7 @@ async function run(map: Map, config: Config)
         else if (value.force)
           reason = '(FORCED)';
         
-        if (value.dif)
+        if (value.diff)
           fs.writeFileSync(`${filename}.png`, value.diff);
 
         running[value.id].draft(c.bold.yellow(`UPDATED ${reason} (${time}s)`), value.title);

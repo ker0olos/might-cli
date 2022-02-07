@@ -1,12 +1,12 @@
 {
   "type": "module",
   "name": "might-cli",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "A no-code solution for performing frontend tests",
   "scripts": {
-    "prepare": "yarn build",
-    "build": "rm -rf build && mkdir build && yarn tsc --removeComments -p tsconfig.json",
-    "watch": "yarn tsc -w -p tsconfig.json"
+    "prepublishOnly": "yarn build",
+    "dev": "tsc -w -p tsconfig.json",
+    "build": "rm -rf build && mkdir build && tsc --removeComments -p tsconfig.json"
   },
   "engines": {
     "node": ">=16"
