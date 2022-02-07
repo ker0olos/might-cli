@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "might-cli",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "A no-code solution for performing frontend tests",
   "scripts": {
     "prepare": "yarn build",
