@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "might-cli",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "A no-code solution for performing frontend tests",
   "scripts": {
     "prepublishOnly": "yarn build",
@@ -47,25 +47,25 @@
     "convert-source-map": "^1.8.0",
     "draftlog": "1.0.12",
     "exit": "^0.1.2",
-    "fs-extra": "^10.0.0",
+    "fs-extra": "^10.0.1",
     "is-ci": "^3.0.1",
     "istanbul-lib-coverage": "^3.2.0",
     "istanbul-lib-report": "^3.0.0",
-    "istanbul-reports": "^3.1.2",
+    "istanbul-reports": "^3.1.4",
     "jimp": "^0.16.1",
     "looks-same": "^7.3.0",
     "md5": "^2.3.0",
     "might-core": "^1.0.2",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.6",
     "nanomatch": "^1.2.13",
-    "node-fetch": "^3.1.0",
+    "node-fetch": "^3.2.3",
     "p-limit": "^4.0.0",
-    "playwright": "^1.17.1",
+    "playwright": "^1.20.1",
     "prompts": "^2.4.2",
     "ps-tree": "^1.2.0",
     "sanitize-filename": "^1.6.3",
     "source-map": "^0.7.3",
-    "v8-to-istanbul": "^8.1.0"
+    "v8-to-istanbul": "^8.1.1"
   },
   "devDependencies": {
     "@types/convert-source-map": "^1.5.2",
@@ -74,13 +74,13 @@
     "@types/is-ci": "^3.0.0",
     "@types/istanbul-lib-coverage": "^2.0.4",
     "@types/istanbul-lib-report": "^3.0.0",
-    "@types/md5": "^2.3.1",
+    "@types/md5": "^2.3.2",
     "@types/minimist": "^1.2.2",
     "@types/node-fetch": "^3.0.3",
     "@types/prompts": "^2.0.14",
-    "@typescript-eslint/eslint-plugin": "^5.8.0",
-    "@typescript-eslint/parser": "^5.8.0",
-    "eslint": "^8.5.0",
-    "typescript": "^4.5.4"
+    "@typescript-eslint/eslint-plugin": "^5.16.0",
+    "@typescript-eslint/parser": "^5.16.0",
+    "eslint": "^8.12.0",
+    "typescript": "^4.6.3"
   }
 }
