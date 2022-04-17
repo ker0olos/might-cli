@@ -47,7 +47,7 @@
     "convert-source-map": "^1.8.0",
     "draftlog": "1.0.12",
     "exit": "^0.1.2",
-    "fs-extra": "^10.0.1",
+    "fs-extra": "^10.1.0",
     "is-ci": "^3.0.1",
     "istanbul-lib-coverage": "^3.2.0",
     "istanbul-lib-report": "^3.0.0",
@@ -60,7 +60,7 @@
     "nanomatch": "^1.2.13",
     "node-fetch": "^3.2.3",
     "p-limit": "^4.0.0",
-    "playwright": "^1.20.1",
+    "playwright": "^1.21.0",
     "prompts": "^2.4.2",
     "ps-tree": "^1.2.0",
     "sanitize-filename": "^1.6.3",
@@ -78,9 +78,9 @@
     "@types/minimist": "^1.2.2",
     "@types/node-fetch": "^3.0.3",
     "@types/prompts": "^2.0.14",
-    "@typescript-eslint/eslint-plugin": "^5.16.0",
-    "@typescript-eslint/parser": "^5.16.0",
-    "eslint": "^8.12.0",
+    "@typescript-eslint/eslint-plugin": "^5.19.0",
+    "@typescript-eslint/parser": "^5.19.0",
+    "eslint": "^8.13.0",
     "typescript": "^4.6.3"
   }
 }
